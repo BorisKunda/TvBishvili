@@ -26,6 +26,10 @@
     
     
     <string name="error_favorite_login_required">התחבר כדי לשמור מועדפים.</string>
+    <string name="error_favorite_remove_failed">לא ניתן היה להסיר מהמועדפים. אנא נסה שוב.</string>
+    <string name="remove_favorite_dialog_message">האם אתה בטוח שברצונך להסיר את הכותר הזה מהמועדפים?</string>
+    <string name="remove_favorite_dialog_confirm">הסר</string>
+    <string name="remove_favorite_dialog_cancel">ביטול</string>
     <!-- Shown instead of the operation-specific message when the failure looks like connectivity. -->
     
     

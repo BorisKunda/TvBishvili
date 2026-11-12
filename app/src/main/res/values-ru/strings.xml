@@ -26,6 +26,10 @@
     
     
     <string name="error_favorite_login_required">Войдите, чтобы сохранять избранное.</string>
+    <string name="error_favorite_remove_failed">Не удалось удалить из избранного. Пожалуйста, попробуйте ещё раз.</string>
+    <string name="remove_favorite_dialog_message">Вы уверены, что хотите удалить это название из избранного?</string>
+    <string name="remove_favorite_dialog_confirm">Удалить</string>
+    <string name="remove_favorite_dialog_cancel">Отмена</string>
     <!-- Shown instead of the operation-specific message when the failure looks like connectivity. -->
     
     
