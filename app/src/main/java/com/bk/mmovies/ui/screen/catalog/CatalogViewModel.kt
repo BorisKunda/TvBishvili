@@ -30,6 +30,7 @@ import com.bk.mmovies.ui.screen.catalog.screencomponents.CatalogBottomTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +42,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 @HiltViewModel
@@ -106,6 +108,9 @@ class CatalogViewModel @Inject constructor(
     private val _messageEvent: MutableSharedFlow<String> =
             MutableSharedFlow(extraBufferCapacity = 1)
     val messageEvent: SharedFlow<String> = _messageEvent.asSharedFlow()
+
+    private val _removalConfirmationItem = MutableStateFlow<CatalogItem?>(null)
+    val removalConfirmationItem: StateFlow<CatalogItem?> = _removalConfirmationItem.asStateFlow()
 
     private var loadCatalogItemsJob: Job? = null
     private var loadNextPageJob: Job? = null
@@ -485,6 +490,11 @@ class CatalogViewModel @Inject constructor(
         }
         val newIsFavorite = !catalogItem.isFavorite
 
+        if (!newIsFavorite && isFavoritesCategorySelected()) {
+            _removalConfirmationItem.value = catalogItem
+            return
+        }
+
         // Optimistic: flip the star immediately, revert only if the call fails.
         // The repository persists the toggle to the local favorite-id cache too.
         updateCatalogItemFavoriteState(catalogItem.id, newIsFavorite)
@@ -503,6 +513,65 @@ class CatalogViewModel @Inject constructor(
                 _messageEvent.tryEmit(result.errorMessage)
             }
         }
+    }
+
+    fun onRemovalDismissed() {
+        _removalConfirmationItem.value = null
+    }
+
+    fun onRemovalConfirmed() {
+        val itemToRemove = _removalConfirmationItem.value ?: return
+        _removalConfirmationItem.value = null
+        val contentBeforeRemoval = _catalogScreenState.value as? CatalogScreenState.Content ?: return
+        val sessionId = authenticationRepository.getSharedPrefLoginSessionId() ?: return
+        val accountId = authenticationRepository.getSharedPrefAccountId() ?: return
+        val categoryAtRemoval = _selectedCategory.value
+
+        _catalogScreenState.value = CatalogScreenState.Loading
+        viewModelScope.launch {
+            val removalCall = async {
+                when (itemToRemove.mediaType) {
+                    CatalogMediaType.MOVIE     ->
+                        movieRepository.toggleFavorite(accountId, sessionId, itemToRemove.id, false)
+                    CatalogMediaType.TV_SERIES ->
+                        tvRepository.toggleFavorite(accountId, sessionId, itemToRemove.id, false)
+                }
+            }
+            val result = withTimeoutOrNull(FAVORITE_REMOVAL_TIMEOUT_MILLIS) { removalCall.await() }
+            val isStillShowingRemovalLoader = _catalogScreenState.value === CatalogScreenState.Loading &&
+                    _selectedCategory.value == categoryAtRemoval
+            if (result is ToggleFavoriteResult.Success) {
+                if (isStillShowingRemovalLoader) {
+                    showContentWithoutItem(contentBeforeRemoval, itemToRemove.id)
+                }
+                return@launch
+            }
+            if (isStillShowingRemovalLoader) {
+                _catalogScreenState.value = contentBeforeRemoval
+            }
+            _messageEvent.tryEmit(context.getString(R.string.error_favorite_remove_failed))
+            if (result == null && removalCall.await() is ToggleFavoriteResult.Success) {
+                removeItemFromDisplayedContent(itemToRemove.id)
+            }
+        }
+    }
+
+    private fun isFavoritesCategorySelected(): Boolean =
+            _selectedCategory.value == MovieCategory.FavoritesMovieCategory ||
+                    _selectedCategory.value == TvSeriesCategory.FavoritesTvSeriesCategory
+
+    private fun showContentWithoutItem(content: CatalogScreenState.Content, itemId: Int) {
+        val remainingItems = content.catalogItems.filter { it.id != itemId }
+        _catalogScreenState.value = if (remainingItems.isEmpty()) {
+            CatalogScreenState.Empty
+        } else {
+            content.copy(catalogItems = remainingItems)
+        }
+    }
+
+    private fun removeItemFromDisplayedContent(itemId: Int) {
+        val currentState = _catalogScreenState.value as? CatalogScreenState.Content ?: return
+        showContentWithoutItem(currentState, itemId)
     }
 
     /**
@@ -584,6 +653,7 @@ class CatalogViewModel @Inject constructor(
 }
 
 private const val NETWORK_SETTLE_DELAY_MILLIS = 1500L
+private const val FAVORITE_REMOVAL_TIMEOUT_MILLIS = 3000L
 private const val MAX_NETWORK_CHANGE_RETRIES = 2
 private const val KEY_SELECTED_TAB = "catalog_selected_tab"
 private const val KEY_SELECTED_CATEGORY_ID = "catalog_selected_category_id"

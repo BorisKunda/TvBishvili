@@ -26,6 +26,10 @@
     
     
     <string name="error_favorite_login_required">Log in to save favorites.</string>
+    <string name="error_favorite_remove_failed">Couldn\'t remove from favorites. Please try again.</string>
+    <string name="remove_favorite_dialog_message">Are you sure you want to remove this title from favorites?</string>
+    <string name="remove_favorite_dialog_confirm">Remove</string>
+    <string name="remove_favorite_dialog_cancel">Cancel</string>
     <!-- Shown instead of the operation-specific message when the failure looks like connectivity. -->
     
     

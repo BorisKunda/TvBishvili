@@ -42,6 +42,7 @@ import com.bk.mmovies.connectivity.openDeviceInternetSettings
 import com.bk.mmovies.domain.model.Category
 import com.bk.mmovies.ui.component.PoweredByNewsApiFooter
 import com.bk.mmovies.ui.component.PoweredByTmdbFooter
+import com.bk.mmovies.ui.component.RemoveFavoriteDialog
 import com.bk.mmovies.ui.screen.catalog.screencomponents.CatalogBottomTab
 import com.bk.mmovies.ui.screen.catalog.screencomponents.CatalogBottomTabBar
 import com.bk.mmovies.ui.screen.catalog.screencomponents.CatalogScreenContent
@@ -235,6 +236,14 @@ fun CatalogScreen(
                 onDismiss = { isCategoryPopupVisible = false },
                 state = categorySheetState
                              )
+    }
+
+    val removalConfirmationItem by catalogViewModel.removalConfirmationItem.collectAsStateWithLifecycle()
+    if (removalConfirmationItem != null) {
+        RemoveFavoriteDialog(
+                onConfirm = { catalogViewModel.onRemovalConfirmed() },
+                onDismiss = { catalogViewModel.onRemovalDismissed() }
+                            )
     }
 
     val articleUrl = openArticleUrl
