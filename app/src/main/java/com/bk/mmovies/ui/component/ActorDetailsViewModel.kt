@@ -2,6 +2,7 @@ package com.bk.mmovies.ui.component
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bk.mmovies.connectivity.InternetMonitor
 import com.bk.mmovies.domain.model.PersonDetailsModel
 import com.bk.mmovies.domain.model.result.PersonDetailsResult
 import com.bk.mmovies.domain.repository.PersonRepository
@@ -19,7 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ActorDetailsViewModel @Inject constructor(
         private val personRepository: PersonRepository,
-        localeMonitor: LocaleMonitor
+        localeMonitor: LocaleMonitor,
+        internetMonitor: InternetMonitor
                                                 ) : ViewModel() {
 
     private val _personDetailsState = MutableStateFlow<PersonDetailsUiState>(
@@ -42,6 +44,18 @@ class ActorDetailsViewModel @Inject constructor(
                     .collectLatest {
                         val id = personId ?: return@collectLatest
                         fetchPersonDetails(id)
+                    }
+        }
+        viewModelScope.launch {
+            internetMonitor.isInternetAvailable
+                    .drop(1)
+                    .collectLatest { isAvailable ->
+                        val currentState = _personDetailsState.value
+                        val isShowingConnectionError = currentState is PersonDetailsUiState.Error &&
+                                currentState.isConnectivityFailure
+                        if (isAvailable && isShowingConnectionError) {
+                            retry()
+                        }
                     }
         }
     }
@@ -71,7 +85,7 @@ class ActorDetailsViewModel @Inject constructor(
                     _personDetailsState.value = PersonDetailsUiState.Content(result.personDetails)
                 }
                 is PersonDetailsResult.Failure -> {
-                    _personDetailsState.value = PersonDetailsUiState.Error(result.errorMessage)
+                    _personDetailsState.value = PersonDetailsUiState.Error(result.errorMessage, result.isConnectivityFailure)
                 }
             }
         }
@@ -81,5 +95,5 @@ class ActorDetailsViewModel @Inject constructor(
 sealed interface PersonDetailsUiState {
     object Loading : PersonDetailsUiState
     data class Content(val personDetails: PersonDetailsModel) : PersonDetailsUiState
-    data class Error(val errorMessage: String) : PersonDetailsUiState
+    data class Error(val errorMessage: String, val isConnectivityFailure: Boolean = false) : PersonDetailsUiState
 }

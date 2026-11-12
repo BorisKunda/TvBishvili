@@ -13,6 +13,7 @@ import com.bk.mmovies.domain.model.SeriesAirDateLabel
 import com.bk.mmovies.domain.model.TvSeriesCategory
 import com.bk.mmovies.ui.component.EmptyStateView
 import com.bk.mmovies.ui.component.GenericErrorScreen
+import com.bk.mmovies.ui.component.NetworkErrorScreen
 import com.bk.mmovies.ui.component.NoInternetView
 import com.bk.mmovies.ui.screen.catalog.CatalogScreenState
 
@@ -92,6 +93,14 @@ fun CatalogScreenContent(
                         onTryAgainClicked = onRetry,
                         onSettingsButtonClicked = onOpenNetworkSettings
                               )
+            }
+
+            is CatalogScreenState.ServerUnreachable -> {
+                NetworkErrorScreen(
+                        errorMessageText = stringResource(com.bk.mmovies.core.R.string.error_server_unreachable),
+                        onTryAgainClicked = onRetry,
+                        onOpenSettingsClicked = onOpenNetworkSettings
+                                  )
             }
         }
     }

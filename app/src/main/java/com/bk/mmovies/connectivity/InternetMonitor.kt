@@ -7,10 +7,15 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
+import android.os.SystemClock
 import com.bk.mmovies.util.logDebug
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,6 +38,17 @@ class InternetMonitor @Inject constructor(
     val isInternetAvailable: StateFlow<Boolean> =
             _isInternetAvailable.asStateFlow()
 
+    private val _networkChanges = MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+                                                         )
+
+    val networkChanges: SharedFlow<Unit> = _networkChanges.asSharedFlow()
+
+    @Volatile
+    var lastNetworkChangeElapsedMillis: Long = 0L
+        private set
+
     private var isStarted = false
 
     private val networkCallback =
@@ -48,6 +64,8 @@ class InternetMonitor @Inject constructor(
                             "onAvailable",
                             connectivityManager.getNetworkCapabilities(network)
                                     )
+                    lastNetworkChangeElapsedMillis = SystemClock.elapsedRealtime()
+                    _networkChanges.tryEmit(Unit)
                 }
 
                 override fun onCapabilitiesChanged(

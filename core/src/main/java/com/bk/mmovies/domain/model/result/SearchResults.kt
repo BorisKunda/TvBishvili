@@ -4,5 +4,5 @@ import com.bk.mmovies.domain.model.SearchResultModel
 
 sealed interface SearchResult {
     data class Success(val results: List<SearchResultModel>, val page: Int = 1, val totalPages: Int = 1) : SearchResult
-    data class Failure(val errorMessage: String) : SearchResult
+    data class Failure(val errorMessage: String, val isConnectivityFailure: Boolean = false) : SearchResult
 }

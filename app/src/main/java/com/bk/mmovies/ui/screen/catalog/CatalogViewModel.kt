@@ -1,6 +1,7 @@
 package com.bk.mmovies.ui.screen.catalog
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,6 +30,7 @@ import com.bk.mmovies.ui.screen.catalog.screencomponents.CatalogBottomTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -50,7 +52,7 @@ class CatalogViewModel @Inject constructor(
         private val savedStateHandle: SavedStateHandle,
         @ApplicationContext private val context: Context,
         localeMonitor: LocaleMonitor,
-        internetMonitor: InternetMonitor
+        private val internetMonitor: InternetMonitor
                                           ) : ViewModel() {
 
     private val unknownCategoryMessage: String
@@ -107,6 +109,10 @@ class CatalogViewModel @Inject constructor(
 
     private var loadCatalogItemsJob: Job? = null
     private var loadNextPageJob: Job? = null
+    private var userProfileJob: Job? = null
+    private var networkChangeRetryJob: Job? = null
+    private var networkChangeRetryCount = 0
+    private var loadAttemptStartedAtMillis = 0L
 
     init {
         startLoad(_selectedCategory.value)
@@ -132,7 +138,7 @@ class CatalogViewModel @Inject constructor(
         viewModelScope.launch {
             internetMonitor.isInternetAvailable.collectLatest { isAvailable ->
                 if (!isAvailable) return@collectLatest
-                if (_catalogScreenState.value is CatalogScreenState.Offline) {
+                if (_catalogScreenState.value.isConnectionProblem()) {
                     retry()
                 }
                 // loadUserProfile() only ever runs once, from init. If that
@@ -143,10 +149,23 @@ class CatalogViewModel @Inject constructor(
                 // "avatar stuck as '?' after reconnecting" bug: this repeats
                 // the load once connectivity is confirmed back, same
                 // worst-case-it-fails-again safety as the retry() above.
-                if (!_userProfileState.value.isGuest && _userProfileState.value.name.isBlank()) {
-                    loadUserProfile()
+                retryUserProfileIfMissing()
+            }
+        }
+
+        viewModelScope.launch {
+            internetMonitor.networkChanges.collectLatest {
+                delay(NETWORK_SETTLE_DELAY_MILLIS)
+                if (_catalogScreenState.value is CatalogScreenState.ServerUnreachable) {
+                    retry()
                 }
             }
+        }
+    }
+
+    private fun retryUserProfileIfMissing() {
+        if (!_userProfileState.value.isGuest && _userProfileState.value.name.isBlank()) {
+            loadUserProfile()
         }
     }
 
@@ -156,7 +175,8 @@ class CatalogViewModel @Inject constructor(
             _userProfileState.value = UserProfileUiState(isGuest = true)
             return
         }
-        viewModelScope.launch {
+        if (userProfileJob?.isActive == true) return
+        userProfileJob = viewModelScope.launch {
             when (val result = authenticationRepository.getAccountDetailsResult(loginSessionId)) {
                 is AccountDetailsResult.Success -> {
                     // Cached here (rather than re-fetched) so any screen that
@@ -248,6 +268,7 @@ class CatalogViewModel @Inject constructor(
      */
     fun retry() {
         startLoad(_selectedCategory.value)
+        retryUserProfileIfMissing()
     }
 
     /**
@@ -259,12 +280,40 @@ class CatalogViewModel @Inject constructor(
      * resuming is the other natural point to just try again.
      */
     fun retryIfOffline() {
-        if (_catalogScreenState.value is CatalogScreenState.Offline) {
+        if (_catalogScreenState.value.isConnectionProblem()) {
             retry()
+        } else {
+            retryUserProfileIfMissing()
         }
     }
 
-    private fun startLoad(category: Category) {
+    private fun shouldRetryAfterNetworkChange(): Boolean {
+        if (networkChangeRetryCount >= MAX_NETWORK_CHANGE_RETRIES) return false
+        if (internetMonitor.lastNetworkChangeElapsedMillis < loadAttemptStartedAtMillis) return false
+        networkChangeRetryCount++
+        return true
+    }
+
+    private fun retryAfterNetworkSettles() {
+        networkChangeRetryJob?.cancel()
+        networkChangeRetryJob = viewModelScope.launch {
+            delay(NETWORK_SETTLE_DELAY_MILLIS)
+            if (_catalogScreenState.value is CatalogScreenState.Loading) {
+                startLoad(_selectedCategory.value, isAutomaticRetry = true)
+            }
+        }
+    }
+
+    private fun CatalogScreenState.isConnectionProblem(): Boolean {
+        return this is CatalogScreenState.Offline || this is CatalogScreenState.ServerUnreachable
+    }
+
+    private fun startLoad(category: Category, isAutomaticRetry: Boolean = false) {
+        if (!isAutomaticRetry) {
+            networkChangeRetryCount = 0
+            networkChangeRetryJob?.cancel()
+        }
+        loadAttemptStartedAtMillis = SystemClock.elapsedRealtime()
         _catalogScreenState.value = CatalogScreenState.Loading
         loadNextPageJob?.cancel()
         loadCatalogItemsJob?.cancel()
@@ -400,8 +449,16 @@ class CatalogViewModel @Inject constructor(
     // near the end retries it.
     private fun applyLoadFailure(requestedPage: Int, errorMessage: String, isConnectivityFailure: Boolean = false) {
         if (requestedPage <= 1) {
+            if (isConnectivityFailure && internetMonitor.isInternetAvailable.value && shouldRetryAfterNetworkChange()) {
+                retryAfterNetworkSettles()
+                return
+            }
             _catalogScreenState.value = if (isConnectivityFailure) {
-                CatalogScreenState.Offline
+                if (internetMonitor.isInternetAvailable.value) {
+                    CatalogScreenState.ServerUnreachable
+                } else {
+                    CatalogScreenState.Offline
+                }
             } else {
                 CatalogScreenState.Error(errorMessage)
             }
@@ -526,6 +583,8 @@ class CatalogViewModel @Inject constructor(
     }
 }
 
+private const val NETWORK_SETTLE_DELAY_MILLIS = 1500L
+private const val MAX_NETWORK_CHANGE_RETRIES = 2
 private const val KEY_SELECTED_TAB = "catalog_selected_tab"
 private const val KEY_SELECTED_CATEGORY_ID = "catalog_selected_category_id"
 
@@ -534,6 +593,7 @@ sealed interface CatalogScreenState {
     object Empty : CatalogScreenState
     object FavoritesLoginRequired : CatalogScreenState
     object Offline : CatalogScreenState
+    object ServerUnreachable : CatalogScreenState
     data class Content(
             val catalogItems: List<CatalogItem>,
             val currentPage: Int = 1,

@@ -55,6 +55,11 @@ class TvSeriesDetailsViewModel @Inject constructor(
         _tvSeriesDetailsScreenState.value = TvSeriesDetailsScreenState.Loading
     }
 
+    override fun isShowingConnectionError(): Boolean {
+        val currentState = _tvSeriesDetailsScreenState.value
+        return currentState is TvSeriesDetailsScreenState.Error && currentState.isConnectivityFailure
+    }
+
     override suspend fun fetchDetails(id: Int) {
         val sessionId = authenticationRepository.getSharedPrefLoginSessionId()
         when (val result = tvRepository.getTvSeriesDetails(id, sessionId)) {
@@ -65,7 +70,8 @@ class TvSeriesDetailsViewModel @Inject constructor(
             }
             is TvSeriesDetailsResult.Failure -> {
                 _tvSeriesDetailsScreenState.value = TvSeriesDetailsScreenState.Error(
-                        result.errorMessage
+                        result.errorMessage,
+                        result.isConnectivityFailure
                                                                                     )
             }
         }
@@ -109,5 +115,5 @@ class TvSeriesDetailsViewModel @Inject constructor(
 sealed interface TvSeriesDetailsScreenState {
     object Loading : TvSeriesDetailsScreenState
     data class Content(val tvSeriesDetailsModel: TvSeriesDetailsModel) : TvSeriesDetailsScreenState
-    data class Error(val errorMessage: String) : TvSeriesDetailsScreenState
+    data class Error(val errorMessage: String, val isConnectivityFailure: Boolean = false) : TvSeriesDetailsScreenState
 }

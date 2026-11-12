@@ -50,7 +50,7 @@ import com.bk.mmovies.domain.model.SearchResultMediaType
 import com.bk.mmovies.domain.model.SearchResultModel
 import com.bk.mmovies.domain.model.SeriesAirDateLabel
 import com.bk.mmovies.ui.component.EmptyStateView
-import com.bk.mmovies.ui.component.GenericErrorScreen
+import com.bk.mmovies.ui.component.LoadErrorScreen
 import com.bk.mmovies.ui.component.LoaderView
 import com.bk.mmovies.ui.component.LoadingMoreFooter
 import com.bk.mmovies.ui.component.PaginationEffect
@@ -252,7 +252,7 @@ fun SearchResultsContent(state: SearchResultsUiState, selectedFilters: Set<Searc
         }
 
         is SearchResultsUiState.Error   -> {
-            GenericErrorScreen(state.errorMessage, onTryAgainClicked = onRetry)
+            LoadErrorScreen(state.errorMessage, state.isConnectivityFailure, onTryAgainClicked = onRetry)
         }
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +38,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.bk.mmovies.R
+import com.bk.mmovies.connectivity.openDeviceInternetSettings
 import com.bk.mmovies.data.source.remote.CAST_PROFILE_PATH_SIZE_SEGMENT
 import com.bk.mmovies.data.source.remote.CAST_PROFILE_PATH_SIZE_SEGMENT_ZOOM
 import com.bk.mmovies.domain.model.CastMemberModel
@@ -152,6 +154,17 @@ fun ActorDetailsDialog(
                                     style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.padding(top = characterToBodySpacing)
                                 )
+                            if (currentState.isConnectivityFailure) {
+                                val context = LocalContext.current
+                                Box(modifier = Modifier.padding(top = characterToBodySpacing)) {
+                                    PrimaryButton(
+                                            imageResId = R.drawable.ic_settings,
+                                            label = stringResource(R.string.error_no_internet_action),
+                                            onClick = { openDeviceInternetSettings(context) },
+                                            isEnabled = true
+                                                 )
+                                }
+                            }
                             // PrimaryButton owns its own width/height, so the
                             // spacing above it has to come from a wrapper.
                             Box(modifier = Modifier.padding(top = characterToBodySpacing)) {

@@ -4,5 +4,5 @@ import com.bk.mmovies.domain.model.PersonDetailsModel
 
 sealed interface PersonDetailsResult {
     data class Success(val personDetails: PersonDetailsModel) : PersonDetailsResult
-    data class Failure(val errorMessage: String) : PersonDetailsResult
+    data class Failure(val errorMessage: String, val isConnectivityFailure: Boolean = false) : PersonDetailsResult
 }

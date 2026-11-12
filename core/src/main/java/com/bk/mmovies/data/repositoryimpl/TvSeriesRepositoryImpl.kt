@@ -160,7 +160,7 @@ class TvSeriesRepositoryImpl @Inject constructor(
                 TvSeriesDetailsResult.Success(tvSeriesDetailsMapper.toModel(apiCallResult.data))
             }
             is ApiCallResult.Failure                     -> {
-                TvSeriesDetailsResult.Failure(detailsFailureMessage)
+                TvSeriesDetailsResult.Failure(detailsFailureMessage, apiCallResult.error.isConnectivityFailure)
             }
         }
     }
@@ -285,7 +285,7 @@ class TvSeriesRepositoryImpl @Inject constructor(
                 SeasonDetailsResult.Success(seasonMapper.toModel(apiCallResult.data))
             }
             is ApiCallResult.Failure                   -> {
-                SeasonDetailsResult.Failure(seasonFailureMessage)
+                SeasonDetailsResult.Failure(seasonFailureMessage, apiCallResult.error.isConnectivityFailure)
             }
         }
     }

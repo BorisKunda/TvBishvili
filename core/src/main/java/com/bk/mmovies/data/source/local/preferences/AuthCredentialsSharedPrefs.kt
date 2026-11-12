@@ -16,27 +16,41 @@ class AuthCredentialsSharedPrefs @Inject constructor(
                     Context.MODE_PRIVATE
                                         )
 
+    private val apiKeyCipher = ApiKeyCipher()
+
     fun saveSharedPrefApiKey(apiKey: String) {
         val trimmedApiKey = apiKey.trim()
+        val encryptedApiKey = apiKeyCipher.encrypt(trimmedApiKey) ?: return
         sharedPreferences.edit {
             putString(
-                    API_KEY,
-                    trimmedApiKey
+                    ENCRYPTED_API_KEY,
+                    encryptedApiKey
                      )
+            remove(API_KEY)
         }
     }
 
     fun removeApiKey() {
         sharedPreferences.edit {
+            remove(ENCRYPTED_API_KEY)
             remove(API_KEY)
         }
     }
 
     fun getSharedPrefApiKey(): String? {
-        return sharedPreferences.getString(
+        val encryptedApiKey = sharedPreferences.getString(
+                ENCRYPTED_API_KEY,
+                null
+                                                         )
+        if (encryptedApiKey != null) {
+            return apiKeyCipher.decrypt(encryptedApiKey)
+        }
+        val legacyPlainTextApiKey = sharedPreferences.getString(
                 API_KEY,
                 null
-                                          )
+                                                               ) ?: return null
+        saveSharedPrefApiKey(legacyPlainTextApiKey)
+        return legacyPlainTextApiKey
     }
 
     fun saveSharedPrefLoginValidationToken(loginValidationToken: String) {
@@ -125,6 +139,9 @@ class AuthCredentialsSharedPrefs @Inject constructor(
 
         const val API_KEY =
                 "tmdb_api_key"
+
+        const val ENCRYPTED_API_KEY =
+                "tmdb_api_key_encrypted"
 
         const val LOGIN_VALIDATION_TOKEN =
                 "tmdb_login_validation_token"

@@ -6,6 +6,7 @@ import com.bk.mmovies.core.R
 import com.bk.mmovies.domain.model.SeriesAirDateLabel
 import com.bk.mmovies.locale.LocaleMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.time.LocalDate
 import javax.inject.Inject
 
 private val ENDED_STATUSES = setOf("Ended", "Canceled")
@@ -27,6 +28,7 @@ class SeriesAirDateLabelFormatter @Inject constructor(
     fun format(status: String?, firstAirDate: String?, lastAirDate: String?): SeriesAirDateLabel {
         val startYear = firstAirDate.toYear()
         return when {
+            firstAirDate.isAfterToday() -> upcomingLabel(firstAirDate)
             status in ENDED_STATUSES -> SeriesAirDateLabel.Ended(
                     // Unicode-isolated: "2008 - 2015" is an LTR unit even
                     // inside an RTL (Hebrew) paragraph. Without this, the
@@ -43,11 +45,19 @@ class SeriesAirDateLabelFormatter @Inject constructor(
                                                                     )
             // Planned/In Production/Pilot, or any other/unknown status —
             // treated as "not aired yet" per TMDB's own semantics for those.
-            else                      -> SeriesAirDateLabel.Upcoming(
+            else                      -> upcomingLabel(firstAirDate)
+        }
+    }
+
+    private fun upcomingLabel(firstAirDate: String?): SeriesAirDateLabel.Upcoming =
+            SeriesAirDateLabel.Upcoming(
                     premiereLabel = seriesPremiereLabel(),
                     dateText = firstAirDate?.let { getFormattedDate(it) } ?: tbaLabel()
-                                                                      )
-        }
+                                       )
+
+    private fun String?.isAfterToday(): Boolean {
+        if (this == null) return false
+        return runCatching { LocalDate.parse(this).isAfter(LocalDate.now()) }.getOrDefault(false)
     }
 
     private fun String?.toYear(): String = this?.take(4).orEmpty()

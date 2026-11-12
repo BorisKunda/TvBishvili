@@ -9,6 +9,7 @@ import com.bk.mmovies.data.source.remote.NetworkManager
 import com.bk.mmovies.data.source.remote.api.TmdbApi
 import com.bk.mmovies.data.source.remote.dto.MultiSearchListDto
 import com.bk.mmovies.data.source.remote.result.ApiCallResult
+import com.bk.mmovies.data.source.remote.result.isConnectivityFailure
 import com.bk.mmovies.domain.model.result.SearchResult
 import com.bk.mmovies.domain.repository.SearchRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -40,7 +41,7 @@ class SearchRepositoryImpl @Inject constructor(
                                      )
             }
             is ApiCallResult.Failure                      -> {
-                SearchResult.Failure(failureMessage)
+                SearchResult.Failure(failureMessage, apiCallResult.error.isConnectivityFailure)
             }
         }
     }

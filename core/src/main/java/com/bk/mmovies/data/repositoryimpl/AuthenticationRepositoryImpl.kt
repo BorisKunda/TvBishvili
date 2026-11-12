@@ -57,7 +57,10 @@ class AuthenticationRepositoryImpl @Inject constructor(
             is ApiCallResult.Failure                     -> {
                 when (result.error) {
                     is NetworkError.ExceptionError, NetworkError.EmptyBody -> {
-                        ApiKeyValidationResult.Failure(message(R.string.error_api_key_verify_no_network))
+                        ApiKeyValidationResult.Failure(
+                                message(R.string.error_api_key_verify_no_network),
+                                isConnectivityFailure = result.error.isConnectivityFailure
+                                                      )
                     }
 
                     is NetworkError.HttpError                              -> {
@@ -65,9 +68,15 @@ class AuthenticationRepositoryImpl @Inject constructor(
                         val errorDto = result.error.errorBody
                         val apiStatusCode = errorDto?.statusCode ?: 0
                         if (httpCode == 401 && (apiStatusCode == TMDB_ERROR_CODE_INVALID_API_KEY || apiStatusCode == TMDB_ERROR_CODE_SUSPENDED_API_KEY)) {
-                            ApiKeyValidationResult.Failure(message(R.string.error_api_key_invalid))
+                            ApiKeyValidationResult.Failure(
+                                    message(R.string.error_api_key_invalid),
+                                    isKeyRejected = true
+                                                          )
                         } else {
-                            ApiKeyValidationResult.Failure(message(R.string.error_api_key_verify_failed))
+                            ApiKeyValidationResult.Failure(
+                                    message(R.string.error_api_key_verify_failed),
+                                    isKeyRejected = httpCode == 401
+                                                          )
                         }
                     }
                 }
@@ -78,7 +87,8 @@ class AuthenticationRepositoryImpl @Inject constructor(
                     if (isTokenValid) {
                         ApiKeyValidationResult.Success
                     } else ApiKeyValidationResult.Failure(
-                            message(R.string.error_api_key_invalid)
+                            message(R.string.error_api_key_invalid),
+                            isKeyRejected = true
                                                          )
                 } else {
                     ApiKeyValidationResult.Failure(message(R.string.error_api_key_verify_failed))

@@ -151,7 +151,7 @@ fun TvSeriesDetailsScreenContent(
                                             onLongClick = { isPosterZoomed = true }
                                                       )
                               )
-                    if (showFavoriteStar) {
+                    if (showFavoriteStar && tvSeriesDetails.airDateLabel !is SeriesAirDateLabel.Upcoming) {
                         FavoriteStarButton(
                                 isFavorite = tvSeriesDetails.isFavorite,
                                 onClick = onFavoriteClicked,

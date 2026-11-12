@@ -26,8 +26,10 @@ import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -63,6 +65,8 @@ private val tabContentTopSpacing = 0.dp
 // Gap between the nav bar and the footer above it; the footer's own bottom
 // margin is fixed inside PoweredByTmdbFooter.
 private val tmdbFooterTopPadding = 8.dp
+
+private const val SHORT_SCREEN_HEIGHT_DP = 480
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -102,6 +106,21 @@ fun CatalogScreen(
     val collapsingHeaderState = rememberCollapsingHeaderState()
     LaunchedEffect(selectedTab) {
         collapsingHeaderState.collapsedOffsetPx = 0f
+    }
+
+    val isCatalogErrorShown = selectedTab != CatalogBottomTab.News && (
+            state is CatalogScreenState.Error ||
+                    state is CatalogScreenState.Offline ||
+                    state is CatalogScreenState.ServerUnreachable
+            )
+    val isShortScreen = LocalConfiguration.current.screenHeightDp < SHORT_SCREEN_HEIGHT_DP
+    LaunchedEffect(isCatalogErrorShown, isShortScreen) {
+        if (isCatalogErrorShown && isShortScreen) {
+            withFrameNanos { }
+            collapsingHeaderState.collapsedOffsetPx = -collapsingHeaderState.fullHeightPx
+        } else if (!isCatalogErrorShown) {
+            collapsingHeaderState.collapsedOffsetPx = 0f
+        }
     }
 
     Scaffold(

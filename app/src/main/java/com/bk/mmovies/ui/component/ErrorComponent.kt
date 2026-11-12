@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -26,6 +27,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bk.mmovies.R
+import com.bk.mmovies.connectivity.openDeviceInternetSettings
 import com.bk.mmovies.util.logDebug
 
 
@@ -42,6 +46,7 @@ private val errorViewEmbeddedPaddingTop = 24.dp
 private val errorViewPaddingEnd = 28.dp
 private val errorViewPaddingBottom = 32.dp
 private val errorViewVerticalSpacing = 48.dp
+private val errorViewKeyboardVerticalSpacing = 16.dp
 private val errorImageHeight = 88.dp
 private val errorTitlePaddingTop = 14.dp
 private val errorMessagePaddingTop: Dp = 20.dp
@@ -61,6 +66,7 @@ private val errorActionsTopPadding = 24.dp
         // already applied them, and re-applying pushes the content far down.
         isEmbedded: Boolean = false
                          ) {
+    val isKeyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     LazyColumn(
             modifier = modifier
                     .background(MaterialTheme.colorScheme.background)
@@ -76,7 +82,7 @@ private val errorActionsTopPadding = 24.dp
                     bottom = errorViewPaddingBottom
                                           ),
             verticalArrangement = if (useSpaceBetween) Arrangement.SpaceBetween else Arrangement.spacedBy(
-                    errorViewVerticalSpacing
+                    if (isKeyboardVisible) errorViewKeyboardVerticalSpacing else errorViewVerticalSpacing
                                                                                                          ),
             horizontalAlignment = Alignment.CenterHorizontally
               ) {
@@ -84,7 +90,8 @@ private val errorActionsTopPadding = 24.dp
             ErrorTitleMessage(
                     errorImageResId,
                     errorTitle,
-                    errorMessage
+                    errorMessage,
+                    showImage = !isKeyboardVisible
                              )
         }
         if (actions != null) {
@@ -162,6 +169,61 @@ fun NoInternetView(
 }
 
 @Composable
+fun LoadErrorScreen(
+        errorMessageText: String,
+        isConnectivityFailure: Boolean,
+        onTryAgainClicked: () -> Unit
+                   ) {
+    if (isConnectivityFailure) {
+        val context = LocalContext.current
+        NetworkErrorScreen(
+                errorMessageText = errorMessageText,
+                onTryAgainClicked = onTryAgainClicked,
+                onOpenSettingsClicked = { openDeviceInternetSettings(context) }
+                          )
+    } else {
+        GenericErrorScreen(errorMessageText, onTryAgainClicked)
+    }
+}
+
+@Composable
+fun NetworkErrorScreen(
+        errorMessageText: String,
+        onTryAgainClicked: () -> Unit,
+        onOpenSettingsClicked: () -> Unit,
+        isEmbedded: Boolean = true
+                      ) {
+    ErrorView(
+            modifier = Modifier.fillMaxSize(),
+            errorImageResId = R.drawable.ic_error,
+            errorTitle = stringResource(R.string.generic_error_title),
+            errorMessage = errorMessageText,
+            actions = {
+                PrimaryButton(
+                        imageResId = R.drawable.ic_settings,
+                        label = stringResource(R.string.error_no_internet_action),
+                        {
+                            onOpenSettingsClicked()
+                        },
+                        true
+                             )
+                Spacer(modifier = Modifier.height(noInternetTryAgainSpacing))
+                PrimaryButton(
+                        imageResId = null,
+                        label = stringResource(R.string.try_again),
+                        {
+                            onTryAgainClicked()
+                        },
+                        true
+                             )
+            },
+            useSpaceBetween = true,
+            tag = "NetworkErrorView",
+            isEmbedded = isEmbedded
+             )
+}
+
+@Composable
 private fun ErrorActions(actions: @Composable (ColumnScope.() -> Unit)) {
     Column(
             modifier = Modifier
@@ -176,22 +238,25 @@ private fun ErrorActions(actions: @Composable (ColumnScope.() -> Unit)) {
 private fun ErrorTitleMessage(
         @DrawableRes errorImageResId: Int,
         errorTitle: String,
-        errorMessage: String
+        errorMessage: String,
+        showImage: Boolean = true
                              ) {
     Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
           ) {
-        Image(
-                painter = painterResource(errorImageResId),
-                contentDescription = null,
-                modifier = Modifier
-                        .height(errorImageHeight)
-                        .aspectRatio(1f),
-                contentScale = ContentScale.Fit
-             )
+        if (showImage) {
+            Image(
+                    painter = painterResource(errorImageResId),
+                    contentDescription = null,
+                    modifier = Modifier
+                            .height(errorImageHeight)
+                            .aspectRatio(1f),
+                    contentScale = ContentScale.Fit
+                 )
+        }
         Text(
-                modifier = Modifier.padding(top = errorTitlePaddingTop),
+                modifier = Modifier.padding(top = if (showImage) errorTitlePaddingTop else 0.dp),
                 text = errorTitle,
                 color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.headlineSmall,

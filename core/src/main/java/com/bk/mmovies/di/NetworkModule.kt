@@ -5,6 +5,7 @@ import com.bk.mmovies.data.source.remote.NetworkManager
 import com.bk.mmovies.data.source.remote.TMDB_API_BASE_URL
 import com.bk.mmovies.data.source.remote.api.TmdbApi
 import com.bk.mmovies.data.source.remote.interceptor.ApiKeyInterceptor
+import com.bk.mmovies.data.source.remote.interceptor.ApiKeyRejectionInterceptor
 import com.bk.mmovies.data.source.remote.interceptor.DebugLoggingInterceptor
 import com.bk.mmovies.data.source.remote.interceptor.LanguageInterceptor
 import com.bk.mmovies.data.source.remote.interceptor.NetworkCacheInterceptor
@@ -20,9 +21,12 @@ import okhttp3.Cache
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 private const val HTTP_CACHE_SIZE_BYTES = 10L * 1024 * 1024
+private const val TMDB_CONNECT_TIMEOUT_SECONDS = 5L
+private const val TMDB_READ_WRITE_TIMEOUT_SECONDS = 7L
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -38,13 +42,18 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
             apiKeyInterceptor: ApiKeyInterceptor,
+            apiKeyRejectionInterceptor: ApiKeyRejectionInterceptor,
             languageInterceptor: LanguageInterceptor,
             networkCacheInterceptor: NetworkCacheInterceptor,
             @ApplicationContext context: Context
                            ): OkHttpClient {
         return OkHttpClient.Builder()
                 .cache(Cache(context.cacheDir.resolve("http_cache"), HTTP_CACHE_SIZE_BYTES))
+                .connectTimeout(TMDB_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .readTimeout(TMDB_READ_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .writeTimeout(TMDB_READ_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .addInterceptor(apiKeyInterceptor)
+                .addInterceptor(apiKeyRejectionInterceptor)
                 .addInterceptor(languageInterceptor)
                 // Network interceptor: runs after the response comes back
                 // over the wire but before OkHttp's cache decides whether to

@@ -19,6 +19,7 @@
     <string name="error_account_details_failed">Не удалось загрузить данные аккаунта. Пожалуйста, попробуйте позже.</string>
     <string name="error_logout_failed">Не удалось выйти. Пожалуйста, попробуйте позже.</string>
     <string name="error_no_network_generic">Нет подключения. Пожалуйста, проверьте подключение к сети.</string>
+    <string name="error_server_unreachable">Не удалось связаться с сервером. Возможно, соединение медленное или сервер не отвечает. Попробуйте ещё раз.</string>
     <string name="error_news_load_failed">Не удалось загрузить новости. Пожалуйста, попробуйте позже.</string>
     <string name="error_ai_recommendations_failed">Не удалось загрузить рекомендации. Пожалуйста, попробуйте позже.</string>
     <string name="error_ai_recommendations_daily_limit">Достигнут дневной лимит использования Gemini. Повторите попытку в %1$s.</string>
@@ -73,6 +74,7 @@
     <string name="hide_password">Скрыть пароль</string>
     <string name="log_in">Войти в TMDB</string>
     <string name="auth_divider_or">или</string>
+    <string name="snackbar_dismiss_ok">ОК</string>
     <string name="no_tmdb_account_message">Нет аккаунта? Зарегистрируйтесь и подтвердите email, затем попробуйте войти.</string>
     <string name="register_on_tmdb">Зарегистрироваться на TMDB</string>
     <string name="continue_as_guest">Продолжить как гость</string>

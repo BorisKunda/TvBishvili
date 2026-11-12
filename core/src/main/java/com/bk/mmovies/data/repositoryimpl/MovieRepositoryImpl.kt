@@ -170,7 +170,7 @@ class MovieRepositoryImpl @Inject constructor(
                 MovieDetailsResult.Success(movieDetailsMapper.toModel(apiCallResult.data))
             }
             is ApiCallResult.Failure                  -> {
-                MovieDetailsResult.Failure(detailsFailureMessage)
+                MovieDetailsResult.Failure(detailsFailureMessage, apiCallResult.error.isConnectivityFailure)
             }
         }
     }
