@@ -19,6 +19,7 @@
     <string name="error_account_details_failed">Couldn\'t load account details. Please try again later.</string>
     <string name="error_logout_failed">Couldn\'t log out. Please try again later.</string>
     <string name="error_no_network_generic">No connection. Please check your network.</string>
+    <string name="error_server_unreachable">Couldn’t reach the server. The connection may be slow, or the server isn’t responding. Please try again.</string>
     <string name="error_news_load_failed">Couldn\'t load news right now. Please try again later.</string>
     <string name="error_ai_recommendations_failed">Couldn\'t load recommendations right now. Please try again later.</string>
     <string name="error_ai_recommendations_daily_limit">Gemini\'s daily usage limit has been reached. Please try again at %1$s.</string>
@@ -73,6 +74,7 @@
     <string name="hide_password">Hide password</string>
     <string name="log_in">Log in to TMDB</string>
     <string name="auth_divider_or">or</string>
+    <string name="snackbar_dismiss_ok">OK</string>
     <string name="no_tmdb_account_message">Don\'t have an account? Register &amp; verify your email, then try logging in.</string>
     <string name="register_on_tmdb">Register on TMDB</string>
     <string name="continue_as_guest">Continue as guest</string>

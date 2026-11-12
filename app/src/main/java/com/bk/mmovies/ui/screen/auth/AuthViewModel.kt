@@ -37,7 +37,11 @@ class AuthViewModel @Inject constructor(
                     authenticationRepository.getLoginValidationTokenResult()
             when (tokenResult) {
                 is LoginValidationTokenResult.Failure -> {
-                    _authScreenState.value = AuthScreenState.Error(tokenResult.errorMessage)
+                    _authScreenState.value = AuthScreenState.LoginError(
+                            tokenResult.errorMessage,
+                            username,
+                            password
+                                                                       )
                 }
                 is LoginValidationTokenResult.Success -> {
                     val credentialsResult: LoginWithCredentialsResult =
@@ -48,8 +52,11 @@ class AuthViewModel @Inject constructor(
                                                                                    )
                     when (credentialsResult) {
                         is LoginWithCredentialsResult.Failure -> {
-                            _authScreenState.value =
-                                    AuthScreenState.Error(credentialsResult.errorMessage)
+                            _authScreenState.value = AuthScreenState.LoginError(
+                                    credentialsResult.errorMessage,
+                                    username,
+                                    password
+                                                                               )
                         }
                         is LoginWithCredentialsResult.Success -> {
                             val sessionResult: LoginSessionIdResult =
@@ -58,8 +65,11 @@ class AuthViewModel @Inject constructor(
                                                                                      )
                             when (sessionResult) {
                                 is LoginSessionIdResult.Failure -> {
-                                    _authScreenState.value =
-                                            AuthScreenState.Error(sessionResult.errorMessage)
+                                    _authScreenState.value = AuthScreenState.LoginError(
+                                            sessionResult.errorMessage,
+                                            username,
+                                            password
+                                                                                       )
                                 }
                                 is LoginSessionIdResult.Success -> {
                                     authenticationRepository.saveSharedPrefLoginSessionId(
@@ -77,6 +87,12 @@ class AuthViewModel @Inject constructor(
                     }
                 }
             }
+        }
+    }
+
+    fun onCredentialsEdited() {
+        if (_authScreenState.value is AuthScreenState.LoginError) {
+            _authScreenState.value = AuthScreenState.Unauthenticated
         }
     }
 
@@ -105,4 +121,9 @@ sealed interface AuthScreenState {
     object Loading : AuthScreenState
     object Unauthenticated : AuthScreenState
     data class Error(val errorMessage: String) : AuthScreenState
+    data class LoginError(
+            val errorMessage: String,
+            val attemptedUsername: String,
+            val attemptedPassword: String
+                         ) : AuthScreenState
 }

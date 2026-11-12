@@ -7,6 +7,7 @@ import com.bk.mmovies.data.source.remote.NetworkManager
 import com.bk.mmovies.data.source.remote.api.TmdbApi
 import com.bk.mmovies.data.source.remote.dto.PersonDetailsDto
 import com.bk.mmovies.data.source.remote.result.ApiCallResult
+import com.bk.mmovies.data.source.remote.result.isConnectivityFailure
 import com.bk.mmovies.domain.model.result.PersonDetailsResult
 import com.bk.mmovies.domain.repository.PersonRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,7 +32,7 @@ class PersonRepositoryImpl @Inject constructor(
                 PersonDetailsResult.Success(personDetailsMapper.toModel(apiCallResult.data))
             }
             is ApiCallResult.Failure                   -> {
-                PersonDetailsResult.Failure(failureMessage)
+                PersonDetailsResult.Failure(failureMessage, apiCallResult.error.isConnectivityFailure)
             }
         }
     }

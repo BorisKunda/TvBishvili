@@ -26,6 +26,9 @@ android {
 
     buildTypes {
         release {
+            if (project.hasProperty("localTestSigning")) {
+                signingConfig = signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -96,6 +99,10 @@ fun DependencyHandler.compose() {
 fun DependencyHandler.firebase() {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.config)
+    implementation(libs.firebase.appcheck)
+    add("releaseImplementation", libs.firebase.appcheck.playintegrity)
+    add("debugImplementation", libs.firebase.appcheck.debug)
 }
 
 fun DependencyHandler.hilt() {

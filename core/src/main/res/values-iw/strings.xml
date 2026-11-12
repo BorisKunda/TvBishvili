@@ -19,6 +19,7 @@
     <string name="error_account_details_failed">לא ניתן היה לטעון את פרטי החשבון. אנא נסה שוב מאוחר יותר.</string>
     <string name="error_logout_failed">ההתנתקות נכשלה. אנא נסה שוב מאוחר יותר.</string>
     <string name="error_no_network_generic">אין חיבור. אנא בדוק את החיבור לרשת.</string>
+    <string name="error_server_unreachable">לא ניתן היה להתחבר לשרת. ייתכן שהחיבור איטי או שהשרת אינו מגיב. נסה שוב.</string>
     <string name="error_news_load_failed">לא ניתן היה לטעון חדשות כרגע. אנא נסה שוב מאוחר יותר.</string>
     <string name="error_ai_recommendations_failed">לא ניתן היה לטעון המלצות כרגע. אנא נסה שוב מאוחר יותר.</string>
     <string name="error_ai_recommendations_daily_limit">הגעת למגבלת השימוש היומית של Gemini. נסה שוב ב-%1$s.</string>
@@ -73,6 +74,7 @@
     <string name="hide_password">הסתר/י סיסמה</string>
     <string name="log_in">התחברות ל-TMDB</string>
     <string name="auth_divider_or">או</string>
+    <string name="snackbar_dismiss_ok">אישור</string>
     <string name="no_tmdb_account_message">אין לך חשבון? הירשם ואמת את כתובת האימייל שלך, ואז נסה להתחבר.</string>
     <string name="register_on_tmdb">הרשמה ל-TMDB</string>
     <string name="continue_as_guest">המשך כאורח</string>

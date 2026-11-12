@@ -55,6 +55,11 @@ class MovieDetailsViewModel @Inject constructor(
         _movieDetailsScreenState.value = MovieDetailsScreenState.Loading
     }
 
+    override fun isShowingConnectionError(): Boolean {
+        val currentState = _movieDetailsScreenState.value
+        return currentState is MovieDetailsScreenState.Error && currentState.isConnectivityFailure
+    }
+
     override suspend fun fetchDetails(id: Int) {
         val sessionId = authenticationRepository.getSharedPrefLoginSessionId()
         when (val result = movieRepository.getMovieDetails(id, sessionId)) {
@@ -65,7 +70,8 @@ class MovieDetailsViewModel @Inject constructor(
             }
             is MovieDetailsResult.Failure -> {
                 _movieDetailsScreenState.value = MovieDetailsScreenState.Error(
-                        result.errorMessage
+                        result.errorMessage,
+                        result.isConnectivityFailure
                                                                               )
             }
         }
@@ -109,5 +115,5 @@ class MovieDetailsViewModel @Inject constructor(
 sealed interface MovieDetailsScreenState {
     object Loading : MovieDetailsScreenState
     data class Content(val movieDetails: MovieDetailsModel) : MovieDetailsScreenState
-    data class Error(val errorMessage: String) : MovieDetailsScreenState
+    data class Error(val errorMessage: String, val isConnectivityFailure: Boolean = false) : MovieDetailsScreenState
 }

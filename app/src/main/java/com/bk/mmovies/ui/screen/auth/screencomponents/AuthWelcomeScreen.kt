@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -32,8 +33,15 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -71,6 +79,7 @@ private val authDividerLabelPadding = 12.dp
 private val outlineButtonBorderStrokeWidth = 1.dp
 private val authContinueAsGuestPaddingBottom = 4.dp
 private val authTextFieldFontSize = 16.sp
+private val authSnackbarMaterialMarginCorrection = 2.dp
 
 @Composable
 private fun authOutlinedTextFieldColors() = OutlinedTextFieldDefaults.colors(
@@ -90,11 +99,32 @@ fun AuthWelcomeScreen(
         onLoginClicked: (username: String, password: String) -> Unit,
         onRegisterOnTmdbClicked: () -> Unit,
         onContinueAsGuestClicked: () -> Unit,
-        onNavigateToTerms: () -> Unit = {}
+        onNavigateToTerms: () -> Unit = {},
+        credentialsResetSignal: Int = 0,
+        initialUsername: String = "",
+        initialPassword: String = "",
+        isLoginError: Boolean = false,
+        onCredentialsEdited: () -> Unit = {},
+        snackbarHost: @Composable () -> Unit = {}
                              ) {
-    var username by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    var username by rememberSaveable { mutableStateOf(initialUsername) }
+    var password by rememberSaveable { mutableStateOf(initialPassword) }
     var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
+    val usernameFocusRequester = remember { FocusRequester() }
+    val softwareKeyboardController = LocalSoftwareKeyboardController.current
+    var handledCredentialsResetSignal by rememberSaveable {
+        mutableIntStateOf(credentialsResetSignal)
+    }
+    LaunchedEffect(credentialsResetSignal) {
+        if (credentialsResetSignal != handledCredentialsResetSignal) {
+            handledCredentialsResetSignal = credentialsResetSignal
+            username = ""
+            password = ""
+            isPasswordVisible = false
+            usernameFocusRequester.requestFocus()
+            softwareKeyboardController?.show()
+        }
+    }
 
     Box(
             modifier = Modifier.fillMaxSize()
@@ -135,10 +165,18 @@ fun AuthWelcomeScreen(
 
         OutlinedTextField(
                 value = username,
-                onValueChange = { username = it },
+                onValueChange = {
+                    username = it
+                    onCredentialsEdited()
+                },
+                isError = isLoginError,
                 modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = authFieldSpacing),
+                        .padding(bottom = authFieldSpacing)
+                        .focusRequester(usernameFocusRequester)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) onCredentialsEdited()
+                        },
                 label = { Text(text = stringResource(CoreR.string.username_label)) },
                 placeholder = { Text(text = stringResource(R.string.username_placeholder)) },
                 textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = authTextFieldFontSize),
@@ -154,10 +192,17 @@ fun AuthWelcomeScreen(
 
         OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = {
+                    password = it
+                    onCredentialsEdited()
+                },
+                isError = isLoginError,
                 modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = authFieldSpacing),
+                        .padding(bottom = authFieldSpacing)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) onCredentialsEdited()
+                        },
                 label = { Text(text = stringResource(CoreR.string.password_label)) },
                 placeholder = { Text(text = stringResource(R.string.password_placeholder)) },
                 textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = authTextFieldFontSize),
@@ -270,10 +315,15 @@ fun AuthWelcomeScreen(
         }
     }
 
-        PoweredByTmdbFooter(
+        Column(
                 modifier = Modifier.align(Alignment.BottomCenter),
-                onClick = onNavigateToTerms
-                           )
+                horizontalAlignment = Alignment.CenterHorizontally
+              ) {
+            Box(modifier = Modifier.offset(y = authSnackbarMaterialMarginCorrection)) {
+                snackbarHost()
+            }
+            PoweredByTmdbFooter(onClick = onNavigateToTerms)
+        }
     }
 }
 

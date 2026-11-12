@@ -41,6 +41,15 @@ abstract class DetailsViewModel<Id : Any>(
                         fetch(id)
                     }
         }
+        viewModelScope.launch {
+            internetMonitor.isInternetAvailable
+                    .drop(1)
+                    .collectLatest { isAvailable ->
+                        if (isAvailable && isShowingConnectionError()) {
+                            retry()
+                        }
+                    }
+        }
     }
 
     protected fun load(id: Id) {
@@ -64,6 +73,9 @@ abstract class DetailsViewModel<Id : Any>(
 
     /** Reset the screen state back to its Loading variant. */
     protected abstract fun onReload()
+
+    /** True while the screen shows an error caused by a connection problem. */
+    protected abstract fun isShowingConnectionError(): Boolean
 
     /** Fetch [id]'s details and update the screen state (Content/Error). */
     protected abstract suspend fun fetchDetails(id: Id)

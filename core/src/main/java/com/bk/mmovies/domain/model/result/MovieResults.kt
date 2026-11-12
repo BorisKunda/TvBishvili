@@ -10,7 +10,7 @@ sealed interface MoviesResult {
 
 sealed interface MovieDetailsResult {
     data class Success(val movieDetails: MovieDetailsModel) : MovieDetailsResult
-    data class Failure(val errorMessage: String) : MovieDetailsResult
+    data class Failure(val errorMessage: String, val isConnectivityFailure: Boolean = false) : MovieDetailsResult
 }
 
 sealed interface ToggleFavoriteResult {

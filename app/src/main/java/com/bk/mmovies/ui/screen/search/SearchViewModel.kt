@@ -2,6 +2,7 @@ package com.bk.mmovies.ui.screen.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bk.mmovies.connectivity.InternetMonitor
 import com.bk.mmovies.domain.model.MovieCategory
 import com.bk.mmovies.domain.model.SearchResultMediaType
 import com.bk.mmovies.domain.model.SearchResultModel
@@ -21,6 +22,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,7 +34,8 @@ private const val SEARCH_DEBOUNCE_MILLIS = 400L
 @HiltViewModel
 class SearchViewModel @Inject constructor(
         private val searchRepository: SearchRepository,
-        private val tvSeriesRepository: TvSeriesRepository
+        private val tvSeriesRepository: TvSeriesRepository,
+        internetMonitor: InternetMonitor
                                           ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
@@ -64,6 +68,18 @@ class SearchViewModel @Inject constructor(
 
     init {
         loadRecentSearches()
+        viewModelScope.launch {
+            internetMonitor.isInternetAvailable
+                    .drop(1)
+                    .collectLatest { isAvailable ->
+                        val currentState = _resultsState.value
+                        val isShowingConnectionError = currentState is SearchResultsUiState.Error &&
+                                currentState.isConnectivityFailure
+                        if (isAvailable && isShowingConnectionError) {
+                            retry()
+                        }
+                    }
+        }
     }
 
     private fun loadRecentSearches() {
@@ -216,7 +232,7 @@ class SearchViewModel @Inject constructor(
                 // page just stops the footer spinner so scrolling back near
                 // the end retries it.
                 if (requestedPage <= 1) {
-                    _resultsState.value = SearchResultsUiState.Error(result.errorMessage)
+                    _resultsState.value = SearchResultsUiState.Error(result.errorMessage, result.isConnectivityFailure)
                     return
                 }
                 val currentState = _resultsState.value
@@ -238,5 +254,5 @@ sealed interface SearchResultsUiState {
             val endReached: Boolean = false,
             val isLoadingNextPage: Boolean = false
                        ) : SearchResultsUiState
-    data class Error(val errorMessage: String) : SearchResultsUiState
+    data class Error(val errorMessage: String, val isConnectivityFailure: Boolean = false) : SearchResultsUiState
 }

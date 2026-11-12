@@ -30,8 +30,8 @@ import com.bk.mmovies.data.source.remote.NEWS_API_WEBPAGE_ACCOUNT
 import com.bk.mmovies.data.source.remote.NEWS_API_WEBPAGE_GET_STARTED
 import com.bk.mmovies.domain.model.NewsItem
 import com.bk.mmovies.ui.component.EmptyStateView
-import com.bk.mmovies.ui.component.GenericErrorScreen
 import com.bk.mmovies.ui.component.InvalidApiKeyView
+import com.bk.mmovies.ui.component.LoadErrorScreen
 import com.bk.mmovies.ui.screen.news.screencomponents.NewsCardLoadingPlaceholderList
 import com.bk.mmovies.ui.screen.news.screencomponents.NewsListView
 
@@ -130,7 +130,7 @@ internal fun NewsScreenBody(
         }
 
         is NewsScreenState.Error   -> {
-            GenericErrorScreen(screenState.errorMessage, onRetry)
+            LoadErrorScreen(screenState.errorMessage, screenState.isConnectivityFailure, onRetry)
         }
 
         is NewsScreenState.Content -> {

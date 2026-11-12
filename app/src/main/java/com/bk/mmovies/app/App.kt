@@ -8,9 +8,12 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import com.bk.mmovies.BuildConfig
 import com.bk.mmovies.connectivity.InternetMonitor
+import com.bk.mmovies.data.RemoteConfigApiKeyRefresher
+import com.bk.mmovies.data.source.remote.keyrefresh.ApiKeyRefresherHolder
 import com.bk.mmovies.locale.LocaleMonitor
 import com.bk.mmovies.util.MAIN_ACTIVITY_TAG
 import com.bk.mmovies.util.logDebug
+import com.google.firebase.appcheck.FirebaseAppCheck
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -23,8 +26,18 @@ class App : Application(), Application.ActivityLifecycleCallbacks, SingletonImag
     @Inject
     lateinit var localeMonitor: LocaleMonitor
 
+    @Inject
+    lateinit var apiKeyRefresherHolder: ApiKeyRefresherHolder
+
+    @Inject
+    lateinit var remoteConfigApiKeyRefresher: RemoteConfigApiKeyRefresher
+
     override fun onCreate() {
         super.onCreate()
+        apiKeyRefresherHolder.refresher = remoteConfigApiKeyRefresher
+        FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
+                AppCheckProviderFactoryProvider.create()
+                                                                     )
         if (BuildConfig.DEBUG) {
             registerActivityLifecycleCallbacks(this)
         }

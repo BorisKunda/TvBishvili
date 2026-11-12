@@ -31,6 +31,11 @@ class SeasonDetailsViewModel @Inject constructor(
         _seasonDetailsScreenState.value = SeasonDetailsScreenState.Loading
     }
 
+    override fun isShowingConnectionError(): Boolean {
+        val currentState = _seasonDetailsScreenState.value
+        return currentState is SeasonDetailsScreenState.Error && currentState.isConnectivityFailure
+    }
+
     override suspend fun fetchDetails(id: Pair<Int, Int>) {
         val (seriesId, seasonNumber) = id
         when (val result = tvRepository.getSeasonDetails(seriesId, seasonNumber)) {
@@ -38,7 +43,7 @@ class SeasonDetailsViewModel @Inject constructor(
                 _seasonDetailsScreenState.value = SeasonDetailsScreenState.Content(result.season)
             }
             is SeasonDetailsResult.Failure -> {
-                _seasonDetailsScreenState.value = SeasonDetailsScreenState.Error(result.errorMessage)
+                _seasonDetailsScreenState.value = SeasonDetailsScreenState.Error(result.errorMessage, result.isConnectivityFailure)
             }
         }
     }
@@ -47,5 +52,5 @@ class SeasonDetailsViewModel @Inject constructor(
 sealed interface SeasonDetailsScreenState {
     object Loading : SeasonDetailsScreenState
     data class Content(val season: SeasonModel) : SeasonDetailsScreenState
-    data class Error(val errorMessage: String) : SeasonDetailsScreenState
+    data class Error(val errorMessage: String, val isConnectivityFailure: Boolean = false) : SeasonDetailsScreenState
 }

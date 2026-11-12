@@ -26,7 +26,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bk.mmovies.R
 import com.bk.mmovies.domain.model.MovieCategory
-import com.bk.mmovies.ui.component.GenericErrorScreen
+import com.bk.mmovies.ui.component.LoadErrorScreen
 import com.bk.mmovies.ui.component.LoaderView
 import com.bk.mmovies.ui.component.PoweredByTmdbFooter
 import com.bk.mmovies.ui.screen.details.moviedetails.screencomponents.MovieDetailsScreenContent
@@ -80,8 +80,9 @@ fun MovieDetailsScreen(
                 }
 
                 is MovieDetailsScreenState.Error -> {
-                    GenericErrorScreen(
+                    LoadErrorScreen(
                             currentState.errorMessage,
+                            currentState.isConnectivityFailure,
                             onTryAgainClicked = { movieDetailsViewModel.retry() }
                                       )
                 }

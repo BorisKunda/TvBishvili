@@ -170,7 +170,7 @@ class NewsViewModel @Inject constructor(
                 }
                 if (page <= 1) {
                     retryWhenOnline = result.isConnectivityFailure
-                    _screenState.value = NewsScreenState.Error(result.errorMessage)
+                    _screenState.value = NewsScreenState.Error(result.errorMessage, result.isConnectivityFailure)
                     return
                 }
                 val currentState = _screenState.value
@@ -196,5 +196,5 @@ sealed interface NewsScreenState {
             val endReached: Boolean = false,
             val isLoadingNextPage: Boolean = false
                        ) : NewsScreenState
-    data class Error(val errorMessage: String) : NewsScreenState
+    data class Error(val errorMessage: String, val isConnectivityFailure: Boolean = false) : NewsScreenState
 }
