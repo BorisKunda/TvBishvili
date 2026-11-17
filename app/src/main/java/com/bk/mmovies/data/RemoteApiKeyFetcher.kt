@@ -10,7 +10,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 
-private const val TMDB_API_KEY_REMOTE_CONFIG_PARAMETER = "tmdb_api_key_v3"
+const val TMDB_API_KEY_REMOTE_CONFIG_PARAMETER = "tmdb_api_key_v3"
+const val NEWS_API_KEY_REMOTE_CONFIG_PARAMETER = "news_api_key"
+const val GEMINI_API_KEY_REMOTE_CONFIG_PARAMETER = "gemini_api_key"
 private const val FETCH_TIMEOUT_MILLIS = 10_000L
 private const val HTTP_STATUS_TOO_MANY_REQUESTS = 429
 private val HTTP_CLIENT_ERROR_STATUS_RANGE = 400..499
@@ -24,17 +26,19 @@ sealed interface RemoteApiKeyFetchResult {
 @Singleton
 class RemoteApiKeyFetcher @Inject constructor() {
 
-    suspend fun fetchApiKey(): RemoteApiKeyFetchResult {
+    suspend fun fetchApiKey(
+            parameterName: String = TMDB_API_KEY_REMOTE_CONFIG_PARAMETER
+                           ): RemoteApiKeyFetchResult {
         return try {
             withTimeoutOrNull(FETCH_TIMEOUT_MILLIS) {
-                fetchFromRemoteConfig()
+                fetchFromRemoteConfig(parameterName)
             } ?: RemoteApiKeyFetchResult.ConnectionFailed
         } catch (exception: Exception) {
             RemoteApiKeyFetchResult.ConnectionFailed
         }
     }
 
-    private suspend fun fetchFromRemoteConfig(): RemoteApiKeyFetchResult {
+    private suspend fun fetchFromRemoteConfig(parameterName: String): RemoteApiKeyFetchResult {
         val remoteConfig = FirebaseRemoteConfig.getInstance()
         remoteConfig.setConfigSettingsAsync(
                 remoteConfigSettings {
@@ -45,7 +49,7 @@ class RemoteApiKeyFetcher @Inject constructor() {
         if (!fetchOutcome.isSuccessful) {
             return classifyFetchFailure(fetchOutcome.failure)
         }
-        val apiKey = remoteConfig.getString(TMDB_API_KEY_REMOTE_CONFIG_PARAMETER).trim()
+        val apiKey = remoteConfig.getString(parameterName).trim()
         return if (apiKey.isEmpty()) {
             RemoteApiKeyFetchResult.KeyNotDelivered
         } else {

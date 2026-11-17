@@ -6,6 +6,7 @@ import androidx.core.os.ConfigurationCompat
 import java.util.Locale
 import com.bk.mmovies.core.R
 import com.bk.mmovies.data.mapper.RecommendationMapper
+import com.bk.mmovies.data.source.local.preferences.ApiKeyCipher
 import com.bk.mmovies.data.source.local.preferences.GeminiModelAvailabilitySharedPrefs
 import com.bk.mmovies.data.source.remote.GEMINI_API_KEY
 import com.bk.mmovies.data.source.remote.GEMINI_MODELS
@@ -58,20 +59,31 @@ class AiRecommendationRepositoryImpl @Inject constructor(
     private val failureMessage: String
         get() = context.getString(R.string.error_ai_recommendations_failed)
 
+    private val apiKeyCipher = ApiKeyCipher()
+
     override fun saveSharedPrefApiKey(apiKey: String) {
+        val encryptedApiKey = apiKeyCipher.encrypt(apiKey.trim()) ?: return
         sharedPreferences.edit {
-            putString(
-                    GEMINI_API_KEY_PREF,
-                    apiKey.trim()
-                     )
+            putString(ENCRYPTED_GEMINI_API_KEY_PREF, encryptedApiKey)
+            remove(GEMINI_API_KEY_PREF)
         }
     }
 
     override fun getSharedPrefApiKey(): String? {
-        return sharedPreferences.getString(
-                GEMINI_API_KEY_PREF,
-                null
-                                          )
+        val encryptedApiKey = sharedPreferences.getString(ENCRYPTED_GEMINI_API_KEY_PREF, null)
+        if (encryptedApiKey != null) {
+            return apiKeyCipher.decrypt(encryptedApiKey)
+        }
+        val legacyPlainTextApiKey = sharedPreferences.getString(GEMINI_API_KEY_PREF, null) ?: return null
+        saveSharedPrefApiKey(legacyPlainTextApiKey)
+        return legacyPlainTextApiKey
+    }
+
+    override fun removeSharedPrefApiKey() {
+        sharedPreferences.edit {
+            remove(ENCRYPTED_GEMINI_API_KEY_PREF)
+            remove(GEMINI_API_KEY_PREF)
+        }
     }
 
     override fun hasApiKey(): Boolean {
@@ -114,7 +126,7 @@ class AiRecommendationRepositoryImpl @Inject constructor(
 
         // Each model is tried once, never repeated within a load; the next one
         // is only tried after a failure that is not the caller's fault. Every
-        // attempt has its own 10s cap (see GeminiNetworkModule).
+        // attempt has its own 5s cap (see GeminiNetworkModule).
         var dailyLimitFailures = 0
         var otherFailures = 0
         for (model in models) {
@@ -132,10 +144,11 @@ class AiRecommendationRepositoryImpl @Inject constructor(
         logDebug("Gemini", "no model answered: $dailyLimitFailures daily-limited, $otherFailures other failures, ${models.size} tried")
         return if (otherFailures == 0) {
             RecommendationResult.Failure(
-                    context.getString(R.string.error_ai_recommendations_daily_limit, nextResetTimeText())
+                    context.getString(R.string.error_ai_recommendations_daily_limit, nextResetTimeText()),
+                    retryAtEpochMillis = nextPacificMidnight().toInstant().toEpochMilli()
                                         )
         } else {
-            RecommendationResult.Failure(context.getString(R.string.error_ai_recommendations_overloaded))
+            RecommendationResult.Failure(failureMessage)
         }
     }
 
@@ -200,6 +213,12 @@ class AiRecommendationRepositoryImpl @Inject constructor(
                     logDebug("Gemini", "$model: daily limit reached -> marked, next model")
                     Attempt.DailyLimit
                 }
+                error.isRejectedApiKey()             -> Attempt.Stop(
+                        RecommendationResult.Failure(
+                                context.getString(R.string.toast_invalid_api_key),
+                                isInvalidApiKey = true
+                                                    )
+                                                                    )
                 // Bad request / key: the same for every model.
                 error.responseCode in STOP_HTTP_CODES -> Attempt.Stop(RecommendationResult.Failure(failureMessage))
                 else                                 -> {
@@ -209,6 +228,17 @@ class AiRecommendationRepositoryImpl @Inject constructor(
             }
             NetworkError.EmptyBody         -> Attempt.Skip
         }
+    }
+
+    // Google answers a wrong or revoked key with 400 (API_KEY_INVALID), or
+    // 401/403 when the key is blocked or lacks access - the same for every
+    // model, so it means "ask for a different key", not "try the next model".
+    private fun NetworkError.HttpError.isRejectedApiKey(): Boolean {
+        if (responseCode == 401 || responseCode == 403) return true
+        if (responseCode != 400) return false
+        val body = rawErrorBody.orEmpty()
+        return body.contains("API_KEY_INVALID", ignoreCase = true) ||
+                body.contains("API key not valid", ignoreCase = true)
     }
 
     // A 429 whose body names EXACTLY the free-tier requests-per-day quota
@@ -309,6 +339,7 @@ class AiRecommendationRepositoryImpl @Inject constructor(
     private companion object {
         const val PREFERENCES_NAME = "gemini_api_key_preferences"
         const val GEMINI_API_KEY_PREF = "gemini_api_key"
+        const val ENCRYPTED_GEMINI_API_KEY_PREF = "gemini_api_key_encrypted"
 
         // The one quota id that means "this model's free-tier daily request
         // limit is used up" (seen in a real 429 body).

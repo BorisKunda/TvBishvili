@@ -35,7 +35,7 @@ private fun CatalogHeaderBarPreviewFrame(userProfileState: UserProfileUiState) {
     MMoviesTheme {
         Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
             Column(modifier = Modifier.padding(innerPadding)) {
-                UserProfileBar(userProfileState = userProfileState, onLogout = {})
+                UserProfileBar(title = "Movies", userProfileState = userProfileState, onLogout = {})
             }
         }
     }

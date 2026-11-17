@@ -24,6 +24,7 @@ fun CatalogScreenContent(
         isGuest: Boolean,
         onCatalogItemClicked: (id: Int) -> Unit,
         onRetry: () -> Unit,
+        onLoginClicked: () -> Unit = {},
         onOpenNetworkSettings: () -> Unit = {},
         onFavoriteClicked: (catalogItem: CatalogItem) -> Unit = {},
         onLoadNextPage: () -> Unit = {},
@@ -77,7 +78,12 @@ fun CatalogScreenContent(
                 EmptyStateView(
                         imageResId = R.drawable.ic_star_filled_large,
                         title = stringResource(R.string.empty_favorites_guest_title),
-                        message = stringResource(R.string.empty_favorites_guest_message)
+                        message = stringResource(
+                                if (selectedCategory is TvSeriesCategory) R.string.empty_favorites_guest_tv_series_message
+                                else R.string.empty_favorites_guest_message
+                                                ),
+                        actionLabel = stringResource(R.string.log_in_action),
+                        onActionClick = onLoginClicked
                               )
             }
 

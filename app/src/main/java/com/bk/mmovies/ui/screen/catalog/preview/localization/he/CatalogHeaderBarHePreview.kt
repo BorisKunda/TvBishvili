@@ -25,7 +25,7 @@ private fun CatalogHeaderBarPreviewHebrew() {
     MMoviesTheme {
         Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
             Column(modifier = Modifier.padding(innerPadding)) {
-                UserProfileBar(userProfileState = previewUserProfileHebrew, onLogout = {})
+                UserProfileBar(title = "סרטים", userProfileState = previewUserProfileHebrew, onLogout = {})
             }
         }
     }

@@ -241,7 +241,8 @@ class CatalogViewModel @Inject constructor(
         val category: Category = when (tab) {
             CatalogBottomTab.Movies   -> lastMovieCategory
             CatalogBottomTab.TvSeries -> lastTvCategory
-            CatalogBottomTab.News     -> return
+            CatalogBottomTab.News,
+            CatalogBottomTab.AiRecommendations -> return
         }
         setSelectedCategory(category)
         startLoad(category)

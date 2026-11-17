@@ -39,9 +39,6 @@
     <string name="try_again">Try again</string>
 
     <!--BOTTOM NAVIGATION-->
-    <string name="tab_movies">Movies</string>
-    <string name="tab_tv_series">TV Series</string>
-    <string name="tab_news">News</string>
     <string name="tv_series_coming_soon">Coming soon</string>
     <string name="nav_about">About</string>
 
@@ -71,6 +68,7 @@
     <string name="empty_movies_message">There are no movies in this category right now.</string>
     <string name="empty_favorites_guest_title">Log in to see favorites</string>
     <string name="empty_favorites_guest_message">Log in to save and view your favorite movies.</string>
+    <string name="empty_favorites_guest_tv_series_message">Log in to save and view your favorite TV series.</string>
     <string name="empty_tv_series_title">Nothing to show</string>
     <string name="empty_tv_series_message">There are no TV series to show right now.</string>
     <string name="empty_news_title">No news right now</string>
@@ -184,7 +182,13 @@
     <string name="privacy_policy_changes_body">This policy may be updated from time to time. Continued use of the app after changes are made constitutes acceptance of the updated policy.</string>
 
     <!--NEWS-->
+    <string name="ai_recommendations_title">AI Recommendations</string>
+    <string name="ai_recommendations_login_required">Log in to get personalized recommendations.</string>
+    <string name="ai_recommendations_no_signal_message">Favorite a few titles first, then check back here for personalized picks.</string>
+    <string name="open_google_ai_studio">Open Google AI Studio</string>
     <string name="news_screen_title">News</string>
+    <string name="catalog_movies_title">Movies</string>
+    <string name="catalog_tv_series_title">TV Series</string>
     <string name="news_read_full_article">Read full article</string>
     <string name="news_share_action">Share</string>
     <string name="news_share_chooser_title">Share article</string>

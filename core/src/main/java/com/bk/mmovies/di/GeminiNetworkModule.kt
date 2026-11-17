@@ -38,7 +38,7 @@ annotation class GeminiHttpClient
 annotation class GeminiRetrofitClient
 
 // Longest a single Gemini request may take before it is given up on.
-private const val GEMINI_CALL_TIMEOUT_SECONDS = 10L
+private const val GEMINI_CALL_TIMEOUT_SECONDS = 5L
 
 @Module
 @InstallIn(SingletonComponent::class)
