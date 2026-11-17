@@ -173,8 +173,10 @@ fun AppNavigation(
     BackHandler(
             enabled = true,
             onBack = {
-                if (!navController.popBackStack()) {
+                if (navController.previousBackStackEntry == null) {
                     onAppExit()
+                } else {
+                    navController.popBackStack()
                 }
             })
 }

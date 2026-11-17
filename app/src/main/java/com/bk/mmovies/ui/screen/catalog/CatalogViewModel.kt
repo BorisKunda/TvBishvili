@@ -2,7 +2,6 @@ package com.bk.mmovies.ui.screen.catalog
 
 import android.content.Context
 import android.os.SystemClock
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bk.mmovies.R
@@ -51,7 +50,6 @@ class CatalogViewModel @Inject constructor(
         private val tvRepository: TvSeriesRepository,
         private val authenticationRepository: AuthenticationRepository,
         private val catalogItemMapper: CatalogItemMapper,
-        private val savedStateHandle: SavedStateHandle,
         @ApplicationContext private val context: Context,
         localeMonitor: LocaleMonitor,
         private val internetMonitor: InternetMonitor
@@ -65,32 +63,17 @@ class CatalogViewModel @Inject constructor(
             MutableStateFlow<CatalogScreenState>(CatalogScreenState.Loading)
     val catalogScreenState: StateFlow<CatalogScreenState> = _catalogScreenState.asStateFlow()
 
-    // Persisted through SavedStateHandle rather than held as plain ViewModel
-    // state: a ViewModel survives configuration changes but not process death,
-    // and this selection used to live in rememberSaveable, which survived both.
-    private val restoredCategory: Category =
-            savedStateHandle.get<Int>(KEY_SELECTED_CATEGORY_ID)
-                    ?.let { Category.fromCategoryId(it) }
-                    ?.takeIf { it !is UnknownCategory }
-                    ?: MovieCategory.PopularMovieCategory
-
-    private val _selectedTab = MutableStateFlow(
-            savedStateHandle.get<String>(KEY_SELECTED_TAB)
-                    ?.let { saved -> CatalogBottomTab.entries.firstOrNull { it.name == saved } }
-            ?: CatalogBottomTab.Movies
-                                               )
+    private val _selectedTab = MutableStateFlow(CatalogBottomTab.Movies)
     val selectedTab: StateFlow<CatalogBottomTab> = _selectedTab.asStateFlow()
 
-    private val _selectedCategory = MutableStateFlow(restoredCategory)
+    private val _tabHistory = MutableStateFlow<List<CatalogBottomTab>>(emptyList())
+    val tabHistory: StateFlow<List<CatalogBottomTab>> = _tabHistory.asStateFlow()
+
+    private val _selectedCategory = MutableStateFlow<Category>(MovieCategory.PopularMovieCategory)
     val selectedCategory: StateFlow<Category> = _selectedCategory.asStateFlow()
 
-    // Each tab keeps its own last-selected category, so switching tabs and
-    // back doesn't lose where the user was browsing. Only the restored tab's
-    // category is known after process death; the other falls back to Popular.
-    private var lastMovieCategory: MovieCategory =
-            restoredCategory as? MovieCategory ?: MovieCategory.PopularMovieCategory
-    private var lastTvCategory: TvSeriesCategory =
-            restoredCategory as? TvSeriesCategory ?: TvSeriesCategory.PopularTvSeriesCategory
+    private var lastMovieCategory: MovieCategory = MovieCategory.PopularMovieCategory
+    private var lastTvCategory: TvSeriesCategory = TvSeriesCategory.PopularTvSeriesCategory
 
     private val _userProfileState = MutableStateFlow(UserProfileUiState())
     val userProfileState: StateFlow<UserProfileUiState> = _userProfileState.asStateFlow()
@@ -233,9 +216,29 @@ class CatalogViewModel @Inject constructor(
     }
 
     fun onTabSelected(tab: CatalogBottomTab) {
-        if (tab == _selectedTab.value) return
+        val leftTab = _selectedTab.value
+        if (tab == leftTab) return
+        val historyWithoutTarget = _tabHistory.value - tab
+        _tabHistory.value = if (leftTab == CatalogBottomTab.Movies) {
+            historyWithoutTarget
+        } else {
+            historyWithoutTarget + leftTab
+        }
+        switchToTab(tab)
+    }
+
+    fun onTabBackPressed(): Boolean {
+        val history = _tabHistory.value
+        val destination = history.lastOrNull()
+                ?: CatalogBottomTab.Movies.takeIf { _selectedTab.value != CatalogBottomTab.Movies }
+                ?: return false
+        _tabHistory.value = history.dropLast(1)
+        switchToTab(destination)
+        return true
+    }
+
+    private fun switchToTab(tab: CatalogBottomTab) {
         _selectedTab.value = tab
-        savedStateHandle[KEY_SELECTED_TAB] = tab.name
         // News owns its own screen/ViewModel and doesn't drive the catalog
         // list at all - nothing to reload here.
         val category: Category = when (tab) {
@@ -264,7 +267,6 @@ class CatalogViewModel @Inject constructor(
 
     private fun setSelectedCategory(category: Category) {
         _selectedCategory.value = category
-        savedStateHandle[KEY_SELECTED_CATEGORY_ID] = category.categoryId
     }
 
     /**
@@ -656,8 +658,6 @@ class CatalogViewModel @Inject constructor(
 private const val NETWORK_SETTLE_DELAY_MILLIS = 1500L
 private const val FAVORITE_REMOVAL_TIMEOUT_MILLIS = 3000L
 private const val MAX_NETWORK_CHANGE_RETRIES = 2
-private const val KEY_SELECTED_TAB = "catalog_selected_tab"
-private const val KEY_SELECTED_CATEGORY_ID = "catalog_selected_category_id"
 
 sealed interface CatalogScreenState {
     object Loading : CatalogScreenState

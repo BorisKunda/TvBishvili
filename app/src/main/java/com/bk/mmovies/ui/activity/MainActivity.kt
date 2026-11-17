@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
                                 innerPadding,
                                 navController
                                      ) {
-                            finish()
+                            moveTaskToBack(true)
                         }
                         if (isOfflineScreenVisible) {
                             Box(
