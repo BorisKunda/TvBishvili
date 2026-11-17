@@ -1,6 +1,7 @@
 package com.bk.mmovies.ui.screen.catalog
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -105,6 +106,12 @@ fun CatalogScreen(
     // composable's own Scaffold - otherwise its bottom tab bar/TMDB footer
     // would still show through underneath the WebView.
     var openArticleUrl by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val tabHistory by catalogViewModel.tabHistory.collectAsStateWithLifecycle()
+    BackHandler(enabled = selectedTab != CatalogBottomTab.Movies || tabHistory.isNotEmpty()) {
+        isCategoryPopupVisible = false
+        catalogViewModel.onTabBackPressed()
+    }
 
     val isKeyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val collapsingHeaderState = rememberCollapsingHeaderState()
