@@ -39,9 +39,6 @@
     <string name="try_again">Попробовать снова</string>
 
     <!--BOTTOM NAVIGATION-->
-    <string name="tab_movies">Фильмы</string>
-    <string name="tab_tv_series">Сериалы</string>
-    <string name="tab_news">Новости</string>
     <string name="tv_series_coming_soon">Скоро</string>
     <string name="nav_about">О приложении</string>
 
@@ -71,6 +68,7 @@
     <string name="empty_movies_message">В этой категории сейчас нет фильмов.</string>
     <string name="empty_favorites_guest_title">Войдите, чтобы увидеть избранное</string>
     <string name="empty_favorites_guest_message">Войдите, чтобы сохранять и просматривать избранные фильмы.</string>
+    <string name="empty_favorites_guest_tv_series_message">Войдите, чтобы сохранять и просматривать избранные сериалы.</string>
     <string name="empty_tv_series_title">Нечего показать</string>
     <string name="empty_tv_series_message">Сейчас нет доступных сериалов.</string>
     <string name="empty_news_title">Пока нет новостей</string>
@@ -184,7 +182,13 @@
     <string name="privacy_policy_changes_body">Эта политика может время от времени обновляться. Продолжение использования приложения после внесения изменений означает согласие с обновлённой политикой.</string>
 
     <!--NEWS-->
+    <string name="ai_recommendations_title">ИИ-рекомендации</string>
+    <string name="ai_recommendations_login_required">Войдите, чтобы получать персональные рекомендации.</string>
+    <string name="ai_recommendations_no_signal_message">Сначала добавьте пару названий в избранное, а затем возвращайтесь сюда за персональными подборками.</string>
+    <string name="open_google_ai_studio">Открыть Google AI Studio</string>
     <string name="news_screen_title">Новости</string>
+    <string name="catalog_movies_title">Фильмы</string>
+    <string name="catalog_tv_series_title">Сериалы</string>
     <string name="news_read_full_article">Читать полную статью</string>
     <string name="news_share_action">Поделиться</string>
     <string name="news_share_chooser_title">Поделиться статьей</string>

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ private val contentBottomPadding = 32.dp
 private val imageHeight = 88.dp
 private val titlePaddingTop = 14.dp
 private val messagePaddingTop = 12.dp
+private val actionPaddingTop = 20.dp
 
 private const val MESSAGE_ALPHA = 0.7f
 
@@ -40,7 +42,9 @@ fun EmptyStateView(
         @DrawableRes imageResId: Int,
         title: String,
         message: String,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
+        actionLabel: String? = null,
+        onActionClick: () -> Unit = {}
                   ) {
     Column(
             modifier = modifier
@@ -76,6 +80,14 @@ fun EmptyStateView(
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center
             )
+        if (actionLabel != null) {
+            Button(
+                    modifier = Modifier.padding(top = actionPaddingTop),
+                    onClick = onActionClick
+                  ) {
+                Text(text = actionLabel)
+            }
+        }
     }
 }
 

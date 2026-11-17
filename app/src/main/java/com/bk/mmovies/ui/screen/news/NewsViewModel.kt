@@ -1,8 +1,14 @@
 package com.bk.mmovies.ui.screen.news
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bk.mmovies.connectivity.InternetMonitor
+import com.bk.mmovies.core.R as CoreR
+import com.bk.mmovies.data.NEWS_API_KEY_REMOTE_CONFIG_PARAMETER
+import com.bk.mmovies.data.RemoteApiKeyFetchResult
+import com.bk.mmovies.data.RemoteApiKeyFetcher
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.bk.mmovies.domain.model.NewsItem
 import com.bk.mmovies.domain.model.canLoadNextPage
 import com.bk.mmovies.domain.model.isLastPage
@@ -28,6 +34,8 @@ import javax.inject.Inject
 @HiltViewModel
 class NewsViewModel @Inject constructor(
         private val newsRepository: NewsRepository,
+        private val remoteApiKeyFetcher: RemoteApiKeyFetcher,
+        @ApplicationContext private val context: Context,
         localeMonitor: LocaleMonitor,
         internetMonitor: InternetMonitor
                                         ) : ViewModel() {
@@ -41,6 +49,7 @@ class NewsViewModel @Inject constructor(
     private var loadNewsJob: Job? = null
     private var loadNextPageJob: Job? = null
     private var retryWhenOnline = false
+    private var hasTriedRemoteKeyAfterRejection = false
 
     init {
         loadNews()
@@ -112,13 +121,34 @@ class NewsViewModel @Inject constructor(
         loadNewsJob?.cancel()
         retryWhenOnline = false
         loadNewsJob =viewModelScope.launch {
-            if (!newsRepository.hasApiKey()) {
-                _screenState.value = NewsScreenState.NeedsApiKey(missingKey = true)
-                return@launch
-            }
             _screenState.value = NewsScreenState.Loading
+            if (!newsRepository.hasApiKey()) {
+                when (val fetchResult = remoteApiKeyFetcher.fetchApiKey(NEWS_API_KEY_REMOTE_CONFIG_PARAMETER)) {
+                    is RemoteApiKeyFetchResult.Fetched       -> newsRepository.saveSharedPrefApiKey(fetchResult.apiKey)
+                    RemoteApiKeyFetchResult.ConnectionFailed -> {
+                        retryWhenOnline = true
+                        _screenState.value = NewsScreenState.Error(
+                                context.getString(CoreR.string.error_news_load_failed),
+                                isConnectivityFailure = true
+                                                                  )
+                        return@launch
+                    }
+                    RemoteApiKeyFetchResult.KeyNotDelivered  -> {
+                        _screenState.value = NewsScreenState.NeedsApiKey(missingKey = true)
+                        return@launch
+                    }
+                }
+            }
             applyResult(newsRepository.getNews(page = 1), page = 1)
         }
+    }
+
+    // A key rejected by NewsAPI may just be stale in Remote Config's favor:
+    // one re-fetch is tried before bothering the user for their own key.
+    private suspend fun fetchReplacementKeyAfterRejection(rejectedKey: String?): String? {
+        val fetchResult = remoteApiKeyFetcher.fetchApiKey(NEWS_API_KEY_REMOTE_CONFIG_PARAMETER)
+        val fetchedKey = (fetchResult as? RemoteApiKeyFetchResult.Fetched)?.apiKey
+        return fetchedKey?.takeIf { it != rejectedKey }
     }
 
     // Page 1 replaces the list; later pages append to whatever is already
@@ -163,6 +193,24 @@ class NewsViewModel @Inject constructor(
 
             is NewsResult.Failure -> {
                 if (page <= 1 && result.isInvalidApiKey) {
+                    if (!hasTriedRemoteKeyAfterRejection) {
+                        hasTriedRemoteKeyAfterRejection = true
+                        val rejectedKey = newsRepository.getSharedPrefApiKey()
+                        newsRepository.removeSharedPrefApiKey()
+                        loadNextPageJob?.cancel()
+                        loadNewsJob = viewModelScope.launch {
+                            val replacementKey = fetchReplacementKeyAfterRejection(rejectedKey)
+                            if (replacementKey != null) {
+                                newsRepository.saveSharedPrefApiKey(replacementKey)
+                                applyResult(newsRepository.getNews(page = 1), page = 1)
+                            } else {
+                                _invalidApiKeyToastEvent.tryEmit(Unit)
+                                _screenState.value = NewsScreenState.NeedsApiKey(missingKey = false)
+                            }
+                        }
+                        return
+                    }
+                    hasTriedRemoteKeyAfterRejection = false
                     newsRepository.removeSharedPrefApiKey()
                     _invalidApiKeyToastEvent.tryEmit(Unit)
                     _screenState.value = NewsScreenState.NeedsApiKey(missingKey = false)

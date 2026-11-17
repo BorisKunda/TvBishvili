@@ -32,12 +32,14 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bk.mmovies.R
 import com.bk.mmovies.connectivity.openDeviceInternetSettings
 import com.bk.mmovies.domain.model.Category
 import com.bk.mmovies.ui.component.PoweredByNewsApiFooter
@@ -55,6 +57,7 @@ import com.bk.mmovies.ui.screen.catalog.screencomponents.collapsingHeader
 import com.bk.mmovies.ui.screen.catalog.screencomponents.rememberCollapsingHeaderState
 import com.bk.mmovies.ui.screen.news.ArticleWebViewScreen
 import com.bk.mmovies.ui.screen.news.NewsScreen
+import com.bk.mmovies.ui.screen.recommendations.RecommendationsScreen
 import kotlinx.coroutines.launch
 
 // Zero: CategorySelector already carries its own 12dp bottom margin
@@ -109,7 +112,8 @@ fun CatalogScreen(
         collapsingHeaderState.collapsedOffsetPx = 0f
     }
 
-    val isCatalogErrorShown = selectedTab != CatalogBottomTab.News && (
+    val isCatalogErrorShown = selectedTab != CatalogBottomTab.News &&
+            selectedTab != CatalogBottomTab.AiRecommendations && (
             state is CatalogScreenState.Error ||
                     state is CatalogScreenState.Offline ||
                     state is CatalogScreenState.ServerUnreachable
@@ -171,6 +175,14 @@ fun CatalogScreen(
                     // The user profile chip sits at the very top-right of the
                     // screen, above the search bar. Shown on every tab, News included.
                     UserProfileBar(
+                            title = stringResource(
+                                    when (selectedTab) {
+                                        CatalogBottomTab.Movies            -> R.string.catalog_movies_title
+                                        CatalogBottomTab.TvSeries          -> R.string.catalog_tv_series_title
+                                        CatalogBottomTab.News              -> R.string.news_screen_title
+                                        CatalogBottomTab.AiRecommendations -> R.string.ai_recommendations_title
+                                    }
+                                                  ),
                             userProfileState = userProfileState,
                             onLogout = { catalogViewModel.onLogoutClicked() }
                                   )
@@ -179,7 +191,7 @@ fun CatalogScreen(
 
                     // News isn't a catalog list, so the movie/TV category picker
                     // doesn't apply to it.
-                    if (selectedTab != CatalogBottomTab.News) {
+                    if (selectedTab == CatalogBottomTab.Movies || selectedTab == CatalogBottomTab.TvSeries) {
                         // Fixed above the tab content so switching tabs never resets
                         // the selected category.
                         CategorySelector(
@@ -200,6 +212,11 @@ fun CatalogScreen(
                 tabStateHolder.SaveableStateProvider(selectedTab) {
                     if (selectedTab == CatalogBottomTab.News) {
                         NewsScreen(onOpenArticle = { openArticleUrl = it })
+                    } else if (selectedTab == CatalogBottomTab.AiRecommendations) {
+                        RecommendationsScreen(
+                                onNavigateToDetailsScreen = onNavigateToDetailsScreen,
+                                onLoginClicked = { catalogViewModel.onLogoutClicked() }
+                                              )
                     } else {
                         CatalogScreenContent(
                                 state = state,
@@ -207,6 +224,7 @@ fun CatalogScreen(
                                 isGuest = userProfileState.isGuest,
                                 onCatalogItemClicked = { id -> catalogViewModel.handleCatalogItemClicked(id) },
                                 onRetry = { catalogViewModel.retry() },
+                                onLoginClicked = { catalogViewModel.onLogoutClicked() },
                                 onOpenNetworkSettings = { openDeviceInternetSettings(context) },
                                 onFavoriteClicked = { item -> catalogViewModel.onFavoriteClicked(item) },
                                 onLoadNextPage = { catalogViewModel.loadNextPage() },

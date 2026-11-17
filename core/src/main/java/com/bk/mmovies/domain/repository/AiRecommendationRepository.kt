@@ -17,6 +17,7 @@ interface AiRecommendationRepository {
 
     fun saveSharedPrefApiKey(apiKey: String)
     fun getSharedPrefApiKey(): String?
+    fun removeSharedPrefApiKey()
 
     // True once either a runtime-saved key or the compile-time BuildConfig
     // one is usable - the same key getRecommendations() itself resolves.

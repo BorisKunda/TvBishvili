@@ -39,9 +39,6 @@
     <string name="try_again">נסה שוב</string>
 
     <!--BOTTOM NAVIGATION-->
-    <string name="tab_movies">סרטים</string>
-    <string name="tab_tv_series">סדרות טלוויזיה</string>
-    <string name="tab_news">חדשות</string>
     <string name="tv_series_coming_soon">בקרוב</string>
     <string name="nav_about">אודות</string>
 
@@ -71,6 +68,7 @@
     <string name="empty_movies_message">אין סרטים בקטגוריה זו כרגע.</string>
     <string name="empty_favorites_guest_title">התחבר/י כדי לראות מועדפים</string>
     <string name="empty_favorites_guest_message">התחבר/י כדי לשמור ולצפות בסרטים המועדפים עליך.</string>
+    <string name="empty_favorites_guest_tv_series_message">התחבר/י כדי לשמור ולצפות בסדרות המועדפות עליך.</string>
     <string name="empty_tv_series_title">אין מה להציג</string>
     <string name="empty_tv_series_message">אין כרגע סדרות טלוויזיה להצגה.</string>
     <string name="empty_news_title">אין חדשות כרגע</string>
@@ -184,7 +182,13 @@
     <string name="privacy_policy_changes_body">מדיניות זו עשויה להתעדכן מעת לעת. המשך השימוש באפליקציה לאחר ביצוע שינויים מהווה הסכמה למדיניות המעודכנת.</string>
 
     <!--NEWS-->
+    <string name="ai_recommendations_title">המלצות AI</string>
+    <string name="ai_recommendations_login_required">יש להתחבר כדי לקבל המלצות מותאמות אישית.</string>
+    <string name="ai_recommendations_no_signal_message">יש להוסיף כמה כותרים למועדפים, ואז לחזור לכאן להמלצות מותאמות אישית.</string>
+    <string name="open_google_ai_studio">פתח את Google AI Studio</string>
     <string name="news_screen_title">חדשות</string>
+    <string name="catalog_movies_title">סרטים</string>
+    <string name="catalog_tv_series_title">סדרות טלוויזיה</string>
     <string name="news_read_full_article">קרא כתבה מלאה</string>
     <string name="news_share_action">שתף</string>
     <string name="news_share_chooser_title">שתף כתבה</string>

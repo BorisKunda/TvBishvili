@@ -54,6 +54,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,6 +62,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import com.bk.mmovies.R
+import com.bk.mmovies.core.R as CoreR
 import com.bk.mmovies.data.source.remote.POSTER_PATH_SIZE_SEGMENT_LIST_ITEM
 import com.bk.mmovies.data.source.remote.POSTER_PATH_SIZE_SEGMENT_LIST_ITEM_ZOOM
 import com.bk.mmovies.domain.model.CatalogItem
@@ -93,6 +95,7 @@ private val badgeSpacerPadding = 8.dp
 private val textPadding = 4.dp
 private val posterWidth = 92.dp
 private val posterHeight = 130.dp
+private val sparklePlaceholderSize = 56.dp
 val posterCornerShape = 8.dp
 private val ratingBadgeSize = 28.dp
 private val favoriteStarPadding = 0.dp
@@ -152,7 +155,7 @@ fun CatalogListView(
             content = {
                 items(
                         items = catalogItems,
-                        key = { movie -> movie.id }
+                        key = { movie -> "${movie.mediaType}-${movie.id}" }
                      ) { movie ->
                     CatalogItemRow(
                             catalogItem = movie,
@@ -179,11 +182,27 @@ fun CatalogListView(
 
 @Composable
 fun MovieRowLoadingPlaceholderList() {
+    LoadingPlaceholderList(showSparkle = false)
+}
+
+@Preview
+@Composable
+fun AiMovieRowLoadingPlaceholderList(){
+    LoadingPlaceholderList(showSparkle = true)
+}
+
+@Composable
+fun AiRecommendationsLoadingPlaceholderList() {
+    LoadingPlaceholderList(showSparkle = true)
+}
+
+@Composable
+private fun LoadingPlaceholderList(showSparkle: Boolean) {
     LazyColumn(
             userScrollEnabled = false,
             content = {
                 items(4) {
-                    MovieRowLoadingPlaceholder()
+                    MovieRowLoadingPlaceholder(showSparkle = showSparkle)
                 }
             },
             contentPadding = PaddingValues(
@@ -416,7 +435,7 @@ fun CatalogItemRow(
 }
 
 @Composable
-fun MovieRowLoadingPlaceholder() {
+fun MovieRowLoadingPlaceholder(showSparkle: Boolean = false) {
     val transition = rememberInfiniteTransition(label = "loading")
 
     val loadingAlpha by transition.animateFloat(
@@ -457,18 +476,39 @@ fun MovieRowLoadingPlaceholder() {
 
                 verticalAlignment = Alignment.Top
            ) {
-            Image(
-                    painter = painterResource(R.drawable.placeholder),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                            .size(
-                                    width = posterWidth,
-                                    height = posterHeight
-                                 )
-                            .clip(RoundedCornerShape(posterCornerShape))
-                            .alpha(loadingAlpha)
-                 )
+            if (showSparkle) {
+                Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                                .size(
+                                        width = posterWidth,
+                                        height = posterHeight
+                                     )
+                                .clip(RoundedCornerShape(posterCornerShape))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                   ) {
+                    Image(
+                            painter = painterResource(CoreR.drawable.ic_ai),
+                            contentDescription = null,
+                            modifier = Modifier
+                                    .size(sparklePlaceholderSize)
+                                    .alpha(loadingAlpha)
+                         )
+                }
+            } else {
+                Image(
+                        painter = painterResource(R.drawable.placeholder),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                                .size(
+                                        width = posterWidth,
+                                        height = posterHeight
+                                     )
+                                .clip(RoundedCornerShape(posterCornerShape))
+                                .alpha(loadingAlpha)
+                     )
+            }
             Spacer(modifier = Modifier.width(spacerPadding))
             // Mirrors the real row (badge + three text lines) so the content
             // does not visibly jump when loading finishes.

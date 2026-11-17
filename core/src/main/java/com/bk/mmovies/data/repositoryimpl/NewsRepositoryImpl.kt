@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import androidx.core.os.ConfigurationCompat
 import com.bk.mmovies.core.R
 import com.bk.mmovies.data.mapper.NewsMapper
+import com.bk.mmovies.data.source.local.preferences.ApiKeyCipher
 import com.bk.mmovies.data.source.remote.NEWS_API_KEY
 import com.bk.mmovies.data.source.remote.NEWS_MAX_RESULTS
 import com.bk.mmovies.data.source.remote.NEWS_PAGE_SIZE
@@ -41,16 +42,31 @@ class NewsRepositoryImpl @Inject constructor(
     private val failureMessage: String
         get() = context.getString(R.string.error_news_load_failed)
 
+    private val apiKeyCipher = ApiKeyCipher()
+
     override fun saveSharedPrefApiKey(apiKey: String) {
-        sharedPreferences.edit { putString(NEWS_API_KEY_PREF, apiKey.trim()) }
+        val encryptedApiKey = apiKeyCipher.encrypt(apiKey.trim()) ?: return
+        sharedPreferences.edit {
+            putString(ENCRYPTED_NEWS_API_KEY_PREF, encryptedApiKey)
+            remove(NEWS_API_KEY_PREF)
+        }
     }
 
     override fun getSharedPrefApiKey(): String? {
-        return sharedPreferences.getString(NEWS_API_KEY_PREF, null)
+        val encryptedApiKey = sharedPreferences.getString(ENCRYPTED_NEWS_API_KEY_PREF, null)
+        if (encryptedApiKey != null) {
+            return apiKeyCipher.decrypt(encryptedApiKey)
+        }
+        val legacyPlainTextApiKey = sharedPreferences.getString(NEWS_API_KEY_PREF, null) ?: return null
+        saveSharedPrefApiKey(legacyPlainTextApiKey)
+        return legacyPlainTextApiKey
     }
 
     override fun removeSharedPrefApiKey() {
-        sharedPreferences.edit { remove(NEWS_API_KEY_PREF) }
+        sharedPreferences.edit {
+            remove(ENCRYPTED_NEWS_API_KEY_PREF)
+            remove(NEWS_API_KEY_PREF)
+        }
     }
 
     override fun hasApiKey(): Boolean {
@@ -123,5 +139,6 @@ class NewsRepositoryImpl @Inject constructor(
     private companion object {
         const val PREFERENCES_NAME = "news_api_key_preferences"
         const val NEWS_API_KEY_PREF = "news_api_key"
+        const val ENCRYPTED_NEWS_API_KEY_PREF = "news_api_key_encrypted"
     }
 }
