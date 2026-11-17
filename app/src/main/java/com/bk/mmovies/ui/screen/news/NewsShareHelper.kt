@@ -18,6 +18,14 @@ fun shareNewsItem(context: Context, newsItem: NewsItem) {
     } else {
         newsItem.articleUrl
     }
+    shareText(context, shareText)
+}
+
+fun shareArticleUrl(context: Context, articleUrl: String) {
+    shareText(context, articleUrl)
+}
+
+fun shareText(context: Context, shareText: String) {
     val sendIntent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, shareText)

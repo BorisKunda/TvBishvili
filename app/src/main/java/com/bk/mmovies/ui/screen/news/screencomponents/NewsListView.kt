@@ -18,20 +18,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +51,7 @@ import com.bk.mmovies.R
 import com.bk.mmovies.domain.model.NewsItem
 import com.bk.mmovies.ui.component.LoadingMoreFooter
 import com.bk.mmovies.ui.component.PaginationEffect
+import com.bk.mmovies.ui.component.SmallOutlinedButton
 import com.bk.mmovies.ui.theme.CardSurface
 
 private val cardCornerShape = RoundedCornerShape(12.dp)
@@ -222,23 +222,20 @@ fun NewsCard(
                     )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(9.dp))
 
             Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                ) {
-                TextButton(onClick = onReadFullArticle) {
-                    Text(text = stringResource(R.string.news_read_full_article))
-                }
-                IconButton(onClick = onShare) {
-                    Icon(
-                            imageVector = Icons.Filled.Share,
-                            contentDescription = stringResource(R.string.news_share_action),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
-                }
+                SmallOutlinedButton(
+                        stringResource(R.string.news_read_full_article),
+                        Icons.AutoMirrored.Filled.OpenInNew,
+                        onReadFullArticle,
+                        Modifier.wrapContentSize(),
+                        true
+                )
             }
         }
     }
