@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,6 +30,7 @@ import com.bk.mmovies.R
 import com.bk.mmovies.ui.component.LoadErrorScreen
 import com.bk.mmovies.ui.component.LoaderView
 import com.bk.mmovies.ui.component.PoweredByTmdbFooter
+import com.bk.mmovies.ui.screen.details.shareTvSeriesTmdbPage
 import com.bk.mmovies.ui.screen.details.tvseriesdetails.screencomponents.TvSeriesDetailsScreenContent
 
 private const val TAG = "TvSeriesDetailsScreen"
@@ -57,7 +60,10 @@ fun TvSeriesDetailsScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         // The screen previously relied entirely on the system back gesture,
         // which leaves no visible way out for anyone not using gestures.
-        TvSeriesDetailsTopBar(onBack = onBack)
+        TvSeriesDetailsTopBar(onBack = onBack, onShare = {
+            val loadedTitle = (state as? TvSeriesDetailsScreenState.Content)?.tvSeriesDetailsModel?.title
+            shareTvSeriesTmdbPage(context, seriesId, loadedTitle)
+        })
 
         Box(
                 modifier = Modifier.weight(1f),
@@ -97,7 +103,7 @@ fun TvSeriesDetailsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TvSeriesDetailsTopBar(onBack: () -> Unit) {
+private fun TvSeriesDetailsTopBar(onBack: () -> Unit, onShare: () -> Unit) {
     TopAppBar(
             // No title: the header below already shows it at full size, and a
             // second copy here would make TalkBack announce it twice more.
@@ -108,6 +114,16 @@ private fun TvSeriesDetailsTopBar(onBack: () -> Unit) {
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.details_back),
                             tint = MaterialTheme.colorScheme.onSurface
+                        )
+                }
+            },
+            actions = {
+                IconButton(onClick = onShare) {
+                    Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = stringResource(R.string.news_share_action),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(18.dp)
                         )
                 }
             },
