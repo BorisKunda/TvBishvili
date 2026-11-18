@@ -3,21 +3,25 @@ name: MMovies Android CI
 
 # WHEN does this workflow start?
 on:
-  # Automatically on every git push (to any branch).
+  # Only when code lands in master (a merge). Pushes to other branches start nothing.
   push:
-  # Also adds a manual "Run workflow" button in the Actions tab.
-  workflow_dispatch:
+    branches: [master]
+  # When a pull request is created (opened), gets new commits (synchronize) or is reopened.
+  # "closed" is not listed: the merge itself causes a push to master, which is handled above.
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 # What the workflow is allowed to do with your repo. "read" = look at the code only, never change it.
 permissions:
   contents: read
 
 # Avoid running the same thing twice at once.
-# group = one "lane" per workflow + branch. If you push again on the same branch,
-# the older run in that lane is cancelled and only the newest push runs.
+# group = one "lane" per workflow + event + pull request (or branch).
+# A new commit on a pull request cancels the older run of that same pull request.
+# Runs on master are never cancelled, so two quick merges cannot cancel each other's tests.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # A workflow is a list of JOBS. Each job runs on its own fresh virtual machine.
 # Jobs run at the same time unless one says "needs" another.
@@ -140,6 +144,8 @@ jobs:
           retention-days: 7
 
   # JOB 3: instrumented-test = runs tests on a real (virtual) Android phone, the emulator.
+  # Pull requests only READ the emulator caches. Only runs on master SAVE them.
+  # This keeps pull requests from filling the 10 GB cache limit and evicting master's caches.
   instrumented-test:
     # Wait for the "build" job and start only if it succeeded.
     needs: build
@@ -189,19 +195,45 @@ jobs:
           fi
           printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
 
-      # Save the downloaded Android SDK platform and emulator image so the next run can reuse them instead of downloading again.
-      # key = the cache's name, one per API level. If a cache with this name exists it is restored; otherwise it is saved when the job succeeds.
-      # A cache not used for 7 days is deleted, and the whole repo can hold about 10 GB.
-      - name: Cache Android SDK packages
-        uses: actions/cache@v4
+      # Restore the downloaded Android SDK platform, emulator image and emulator program (read only).
+      # key = the cache's name, one per API level. A cache not used for 7 days is deleted,
+      # and the whole repo can hold about 10 GB.
+      - name: Restore Android SDK packages cache
+        id: sdk-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             /usr/local/lib/android/sdk/platforms/android-${{ matrix.api-level }}
             /usr/local/lib/android/sdk/system-images/android-${{ matrix.api-level }}
-          key: android-sdk-${{ runner.os }}-${{ matrix.api-level }}
+            /usr/local/lib/android/sdk/emulator
+          key: android-sdk-v2-${{ runner.os }}-${{ matrix.api-level }}-google_apis-${{ matrix.api-level == 27 && 'x86' || 'x86_64' }}
+
+      # Restore the virtual device and its clean boot snapshot (read only).
+      - name: Restore AVD and snapshot cache
+        id: avd-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-v1-${{ runner.os }}-${{ matrix.api-level }}-google_apis-${{ matrix.api-level == 27 && 'x86' || 'x86_64' }}
+
+      # Only create the virtual device and its first snapshot when there is no cached one.
+      - name: Create AVD and generate snapshot
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: google_apis
+          arch: ${{ matrix.api-level == 27 && 'x86' || 'x86_64' }}
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
 
       # Start an emulator and run the tests inside it.
       # ${{ matrix.api-level }} is replaced by the current value from the list above (23, then 24, ...).
+      # -no-snapshot-save = load the snapshot but never overwrite it.
       - name: Run instrumented tests on API ${{ matrix.api-level }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -212,12 +244,34 @@ jobs:
           # CPU type: API 27 only has a 32-bit (x86) image, all others use 64-bit (x86_64).
           # "A && 'x' || 'y'" is the expression form of "if A then x else y".
           arch: ${{ matrix.api-level == 27 && 'x86' || 'x86_64' }}
+          force-avd-creation: false
           # Turn off screen animations so UI tests are faster and less flaky.
           disable-animations: true
-          # Emulator flags: no window (server has no screen), software graphics, no saved snapshot, no audio, no camera.
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          # Emulator flags: no window (server has no screen), software graphics, no snapshot saving, no audio, no camera.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim -camera-back none
           # The command that runs once the emulator is ready: install the app and run the androidTest tests.
           script: bash ./gradlew :app:connectedDebugAndroidTest --stacktrace
+
+      # Save the caches only on master, only when they were missing, and only after the tests passed.
+      # github.event_name == 'push' is true only for a merge into master (see the "on:" section).
+      - name: Save Android SDK packages cache (master only)
+        if: github.event_name == 'push' && steps.sdk-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /usr/local/lib/android/sdk/platforms/android-${{ matrix.api-level }}
+            /usr/local/lib/android/sdk/system-images/android-${{ matrix.api-level }}
+            /usr/local/lib/android/sdk/emulator
+          key: android-sdk-v2-${{ runner.os }}-${{ matrix.api-level }}-google_apis-${{ matrix.api-level == 27 && 'x86' || 'x86_64' }}
+
+      - name: Save AVD and snapshot cache (master only)
+        if: github.event_name == 'push' && steps.avd-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-v1-${{ runner.os }}-${{ matrix.api-level }}-google_apis-${{ matrix.api-level == 27 && 'x86' || 'x86_64' }}
 
       # Save the test report. The name includes the API level so the 15 runs do not overwrite each other.
       - name: Save instrumented test report
@@ -228,3 +282,30 @@ jobs:
           path: app/build/reports/androidTests
           if-no-files-found: warn
           retention-days: 7
+
+  # JOB 4: all-tests-passed = one summary result for the merge gate.
+  # It waits for lint, build and all 15 emulator jobs and fails if any of them did not succeed.
+  # Add "all-tests-passed" to the master ruleset's required status checks (GitHub website).
+  all-tests-passed:
+    name: all-tests-passed
+    # Wait for every job above.
+    needs: [lint, build, instrumented-test]
+    # always() = run even when a job above failed, so this job can report red instead of being skipped.
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Fail unless lint, build and every emulator job passed
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          TEST_RESULT: ${{ needs.instrumented-test.result }}
+        run: |
+          echo "lint: $LINT_RESULT"
+          echo "build: $BUILD_RESULT"
+          echo "instrumented-test: $TEST_RESULT"
+          if [ "$LINT_RESULT" != "success" ] || [ "$BUILD_RESULT" != "success" ] || [ "$TEST_RESULT" != "success" ]; then
+            echo "Something did not pass."
+            exit 1
+          fi
