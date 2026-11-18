@@ -6,6 +6,7 @@ kotlin_version = "2.4.0"
 ksp_version = "2.3.9"
 coreKtx_version = "1.19.0"
 lifecycleRuntimeKtx_version = "2.11.0"
+androidxWindow_version = "1.5.0"
 kotlinx_serialization_json_version = "1.11.0"
 
 #compose
@@ -44,6 +45,7 @@ espressoCore_version = "3.7.0"
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx_version" }
 androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "browserVersion" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx_version" }
+androidx-window = { group = "androidx.window", name = "window", version.ref = "androidxWindow_version" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx_serialization_json_version" }
 
 #compose

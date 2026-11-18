@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">TvBishvili</string>
+    <string name="unsupported_device_title">המכשיר אינו נתמך</string>
+    <string name="unsupported_device_message">האפליקציה הזו אינה תומכת כרגע בטאבלטים או במכשירים מתקפלים.</string>
+    <string name="unsupported_device_close_action">סגור</string>
 
     <!--ERRORS-->
     <string name="error_no_internet_connection_title">אין חיבור לאינטרנט</string>
