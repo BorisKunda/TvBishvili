@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">TvBishvili</string>
+    <string name="unsupported_device_title">Устройство не поддерживается</string>
+    <string name="unsupported_device_message">Это приложение пока не поддерживает планшеты и складные устройства.</string>
+    <string name="unsupported_device_close_action">Закрыть</string>
 
     <!--ERRORS-->
     <string name="error_no_internet_connection_title">Нет подключения к интернету</string>

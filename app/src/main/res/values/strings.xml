@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">TvBishvili</string>
+    <string name="unsupported_device_title">Device not supported</string>
+    <string name="unsupported_device_message">This app doesn’t currently support tablets or foldable devices.</string>
+    <string name="unsupported_device_close_action">Close</string>
 
     <!--ERRORS-->
     <string name="error_no_internet_connection_title">No internet connection</string>

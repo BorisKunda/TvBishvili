@@ -1,8 +1,11 @@
 package com.bk.mmovies.ui.component
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
@@ -75,6 +78,12 @@ private const val THUMBNAIL_SCRIM_ALPHA = 0.35f
 // video id portion of it.
 private fun String.toYoutubeVideoId(): String? = Uri.parse(this).getQueryParameter("v")
 
+private tailrec fun Context.findHostActivity(): Activity? = when (this) {
+    is Activity       -> this
+    is ContextWrapper -> baseContext.findHostActivity()
+    else              -> null
+}
+
 private fun youtubeThumbnailUrl(videoId: String) = "https://img.youtube.com/vi/$videoId/hqdefault.jpg"
 
 /**
@@ -105,6 +114,15 @@ fun TrailerSection(trailerUrl: String, modifier: Modifier = Modifier, pause: Boo
     var resumeSecond by rememberSaveable(trailerUrl) { mutableStateOf(0f) }
     var isFullscreenDismissed by rememberSaveable(trailerUrl) { mutableStateOf(false) }
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val hostActivity = LocalContext.current.findHostActivity()
+    DisposableEffect(started, hostActivity) {
+        if (started) {
+            hostActivity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        }
+        onDispose {
+            hostActivity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+    }
     LaunchedEffect(isLandscape) {
         if (!isLandscape) {
             isFullscreenDismissed = false
