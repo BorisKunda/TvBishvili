@@ -17,7 +17,7 @@ interface TvSeriesRepository {
     suspend fun getAirDateLabel(seriesId: Int): SeriesAirDateLabel
     suspend fun getSeasonDetails(seriesId: Int, seasonNumber: Int): SeasonDetailsResult
     suspend fun getEpisodeDetails(seriesId: Int, seasonNumber: Int, episodeNumber: Int): EpisodeDetailsResult
-    suspend fun getFavoriteTvSeries(accountId: Int, sessionId: String, page: Int = 1): TvSeriesResult
+    suspend fun getFavoriteTvSeries(accountId: Int, sessionId: String, page: Int = 1, newestFirst: Boolean = false): TvSeriesResult
     suspend fun syncFavoriteIds(accountId: Int, sessionId: String)
     suspend fun getCachedFavoriteIds(): Set<Int>
     suspend fun toggleFavorite(

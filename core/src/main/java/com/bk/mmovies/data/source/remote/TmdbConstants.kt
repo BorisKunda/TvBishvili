@@ -18,6 +18,8 @@ const val FAVORITE_TV_SERIES_ENDPOINT = "account/{account_id}/favorite/tv"
 const val QUERY_PARAM_SESSION_ID = "session_id"
 const val QUERY_PARAM_PAGE = "page"
 const val QUERY_PARAM_SORT_BY = "sort_by"
+const val FAVORITES_SORT_OLDEST_FIRST = "created_at.asc"
+const val FAVORITES_SORT_NEWEST_FIRST = "created_at.desc"
 
 const val POPULAR_MOVIES_LIST_ENDPOINT = "movie/popular"
 const val UPCOMING_MOVIES_LIST_ENDPOINT = "movie/upcoming"

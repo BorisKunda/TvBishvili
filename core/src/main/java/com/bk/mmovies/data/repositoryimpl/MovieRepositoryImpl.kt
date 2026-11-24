@@ -9,6 +9,8 @@ import com.bk.mmovies.data.source.local.dao.FavoriteDao
 import com.bk.mmovies.data.source.local.entity.FavoriteEntity
 import com.bk.mmovies.data.source.remote.APPEND_TO_RESPONSE_CREDITS_AND_VIDEOS
 import com.bk.mmovies.data.source.remote.APPEND_TO_RESPONSE_CREDITS_ACCOUNT_STATES_AND_VIDEOS
+import com.bk.mmovies.data.source.remote.FAVORITES_SORT_NEWEST_FIRST
+import com.bk.mmovies.data.source.remote.FAVORITES_SORT_OLDEST_FIRST
 import com.bk.mmovies.data.source.remote.NetworkManager
 import com.bk.mmovies.data.source.remote.api.TmdbApi
 import com.bk.mmovies.data.source.remote.dto.MovieDetailsDto
@@ -175,10 +177,11 @@ class MovieRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getFavoriteMovies(accountId: Int, sessionId: String, page: Int): MoviesResult {
+    override suspend fun getFavoriteMovies(accountId: Int, sessionId: String, page: Int, newestFirst: Boolean): MoviesResult {
+        val sortBy = if (newestFirst) FAVORITES_SORT_NEWEST_FIRST else FAVORITES_SORT_OLDEST_FIRST
         val apiCallResult: ApiCallResult<MovieListDto> = networkManager.executeApiCall(
                 "GetFavoriteMovies",
-                apiCall = { -> api.getFavoriteMovies(accountId, sessionId, page = page) })
+                apiCall = { -> api.getFavoriteMovies(accountId, sessionId, page = page, sortBy = sortBy) })
 
         return when (apiCallResult) {
             is ApiCallResult.Success<MovieListDto> -> {

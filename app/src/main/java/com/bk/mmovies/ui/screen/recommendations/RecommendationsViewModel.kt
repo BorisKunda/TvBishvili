@@ -42,6 +42,9 @@ import javax.inject.Inject
 
 private typealias FavoriteKey = Pair<Int, CatalogMediaType>
 
+private const val RECENT_FAVORITES_LIMIT = 20
+private const val RECENT_FAVORITES_PER_TYPE = 10
+
 @HiltViewModel
 class RecommendationsViewModel @Inject constructor(
         private val aiRecommendationRepository: AiRecommendationRepository,
@@ -126,11 +129,6 @@ class RecommendationsViewModel @Inject constructor(
                     }
                 }
             }
-            if (!keepContentWhileLoading &&
-                _screenState.value is RecommendationsScreenState.Content &&
-                haveFavoritesChangedSinceLastResult(accountId)) {
-                _screenState.value = RecommendationsScreenState.Loading
-            }
             val favorites = when (val outcome = fetchFavorites(accountId, sessionId)) {
                 is FavoritesOutcome.Loaded -> outcome.items
                 is FavoritesOutcome.Failed -> {
@@ -143,6 +141,9 @@ class RecommendationsViewModel @Inject constructor(
                 }
             }
             val favoriteKeys = favorites.map { it.id to it.mediaType }.toSet()
+            val allFavoriteKeys = favoriteKeys +
+                    movieRepository.getCachedFavoriteIds().map { it to CatalogMediaType.MOVIE } +
+                    tvRepository.getCachedFavoriteIds().map { it to CatalogMediaType.TV_SERIES }
 
             val cached = memoryCache?.takeIf { it.accountId == accountId }
             if (cached != null && cached.favoriteKeys == favoriteKeys) {
@@ -160,7 +161,7 @@ class RecommendationsViewModel @Inject constructor(
             }
 
             val staleItems = (cached?.items ?: saved?.items).orEmpty()
-                    .filterNot { (it.id to it.mediaType) in favoriteKeys }
+                    .filterNot { (it.id to it.mediaType) in allFavoriteKeys }
             if (!keepCurrentScreen) {
                 _screenState.value = RecommendationsScreenState.Loading
             }
@@ -170,7 +171,7 @@ class RecommendationsViewModel @Inject constructor(
                     hasTriedRemoteKeyAfterRejection = false
                     consecutiveFailures = 0
                     val items = resolveSuggestions(result.suggestions)
-                            .filterNot { (it.id to it.mediaType) in favoriteKeys }
+                            .filterNot { (it.id to it.mediaType) in allFavoriteKeys }
                     showItems(items)
                     if (items.isNotEmpty()) {
                         memoryCache = MemoryCache(accountId, favoriteKeys, items)
@@ -188,7 +189,7 @@ class RecommendationsViewModel @Inject constructor(
                     val isFirstFailureInARow = consecutiveFailures == 0
                     consecutiveFailures++
                     _autoRetryAtMillis.value = result.retryAtEpochMillis
-                            ?: (System.currentTimeMillis() + backoffBeforeAutoRetryMillis(consecutiveFailures))
+                            ?: backoffBeforeAutoRetryMillis(consecutiveFailures)?.let { System.currentTimeMillis() + it }
                     if (staleItems.isEmpty()) {
                         _screenState.value = RecommendationsScreenState.Error(
                                 result.errorMessage,
@@ -213,12 +214,13 @@ class RecommendationsViewModel @Inject constructor(
     }
 
     // Each automatic retry can cost up to one request per model against the
-    // free quota, so the wait grows: 30 s, then 2 min, then every 5 min until
-    // it succeeds or the user leaves the tab.
-    private fun backoffBeforeAutoRetryMillis(failuresInARow: Int): Long = when (failuresInARow) {
+    // free quota, so the wait grows: 30 s, then 2 min, then 5 min. After those
+    // three automatic retries it stops (null) until the user taps Try again.
+    private fun backoffBeforeAutoRetryMillis(failuresInARow: Int): Long? = when (failuresInARow) {
         1    -> 30_000L
         2    -> 120_000L
-        else -> 300_000L
+        3    -> 300_000L
+        else -> null
     }
 
     // A key Google rejects may just be outdated in Remote Config's favor: one
@@ -241,15 +243,9 @@ class RecommendationsViewModel @Inject constructor(
         _screenState.value = RecommendationsScreenState.NeedsApiKey(missingKey = false)
     }
 
-    private suspend fun haveFavoritesChangedSinceLastResult(accountId: Int): Boolean {
-        val shownCache = memoryCache?.takeIf { it.accountId == accountId } ?: return false
-        val currentKeys = movieRepository.getCachedFavoriteIds().map { it to CatalogMediaType.MOVIE }.toSet() +
-                tvRepository.getCachedFavoriteIds().map { it to CatalogMediaType.TV_SERIES }.toSet()
-        return currentKeys != shownCache.favoriteKeys
-    }
-
     fun retry() {
         memoryCache = null
+        consecutiveFailures = 0
         load()
     }
 
@@ -262,29 +258,23 @@ class RecommendationsViewModel @Inject constructor(
             tvRepository.getAirDateLabel(seriesId)
 
     fun onFavoriteClicked(catalogItem: CatalogItem) {
+        val shownContent = _screenState.value as? RecommendationsScreenState.Content ?: return
         val sessionId = authenticationRepository.getSharedPrefLoginSessionId() ?: return
         val accountId = authenticationRepository.getSharedPrefAccountId() ?: return
         val newIsFavorite = !catalogItem.isFavorite
-        updateFavoriteState(catalogItem, newIsFavorite)
+        _screenState.value = RecommendationsScreenState.Loading
         viewModelScope.launch {
             val result = when (catalogItem.mediaType) {
                 CatalogMediaType.MOVIE     -> movieRepository.toggleFavorite(accountId, sessionId, catalogItem.id, newIsFavorite)
                 CatalogMediaType.TV_SERIES -> tvRepository.toggleFavorite(accountId, sessionId, catalogItem.id, newIsFavorite)
             }
             if (result is ToggleFavoriteResult.Failure) {
-                updateFavoriteState(catalogItem, !newIsFavorite)
+                _screenState.value = shownContent
                 _messageEvent.tryEmit(result.errorMessage)
+                return@launch
             }
+            load()
         }
-    }
-
-    private fun updateFavoriteState(catalogItem: CatalogItem, isFavorite: Boolean) {
-        val current = _screenState.value as? RecommendationsScreenState.Content ?: return
-        val updated = current.items.map {
-            if (it.id == catalogItem.id && it.mediaType == catalogItem.mediaType) it.copy(isFavorite = isFavorite) else it
-        }
-        _screenState.value = current.copy(items = updated)
-        memoryCache = memoryCache?.copy(items = updated)
     }
 
     private fun showItems(items: List<CatalogItem>) {
@@ -296,8 +286,8 @@ class RecommendationsViewModel @Inject constructor(
     }
 
     private suspend fun fetchFavorites(accountId: Int, sessionId: String): FavoritesOutcome = coroutineScope {
-        val moviesDeferred = async { movieRepository.getFavoriteMovies(accountId, sessionId) }
-        val tvSeriesDeferred = async { tvRepository.getFavoriteTvSeries(accountId, sessionId) }
+        val moviesDeferred = async { movieRepository.getFavoriteMovies(accountId, sessionId, newestFirst = true) }
+        val tvSeriesDeferred = async { tvRepository.getFavoriteTvSeries(accountId, sessionId, newestFirst = true) }
         val moviesResult = moviesDeferred.await()
         val tvSeriesResult = tvSeriesDeferred.await()
         when {
@@ -307,10 +297,19 @@ class RecommendationsViewModel @Inject constructor(
                 FavoritesOutcome.Failed(tvSeriesResult.errorMessage, tvSeriesResult.isConnectivityFailure)
             moviesResult is MoviesResult.Success && tvSeriesResult is TvSeriesResult.Success ->
                 FavoritesOutcome.Loaded(
-                        catalogItemMapper.fromMovies(moviesResult.movies) + catalogItemMapper.fromTvSeries(tvSeriesResult.tvSeries)
+                        pickMostRecentFavorites(
+                                catalogItemMapper.fromMovies(moviesResult.movies),
+                                catalogItemMapper.fromTvSeries(tvSeriesResult.tvSeries)
+                                               )
                                        )
             else                                     -> FavoritesOutcome.Loaded(emptyList())
         }
+    }
+
+    private fun pickMostRecentFavorites(movies: List<CatalogItem>, tvSeries: List<CatalogItem>): List<CatalogItem> {
+        val moviesTaken = minOf(movies.size, maxOf(RECENT_FAVORITES_PER_TYPE, RECENT_FAVORITES_LIMIT - tvSeries.size))
+        val tvSeriesTaken = minOf(tvSeries.size, RECENT_FAVORITES_LIMIT - moviesTaken)
+        return movies.take(moviesTaken) + tvSeries.take(tvSeriesTaken)
     }
 
     private suspend fun resolveSuggestions(suggestions: List<RecommendationSuggestion>): List<CatalogItem> = coroutineScope {
