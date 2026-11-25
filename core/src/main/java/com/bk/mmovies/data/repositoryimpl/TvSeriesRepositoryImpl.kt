@@ -11,6 +11,8 @@ import com.bk.mmovies.data.source.local.dao.TvFavoriteDao
 import com.bk.mmovies.data.source.local.entity.TvFavoriteEntity
 import com.bk.mmovies.data.source.remote.APPEND_TO_RESPONSE_CREDITS_AND_VIDEOS
 import com.bk.mmovies.data.source.remote.APPEND_TO_RESPONSE_CREDITS_ACCOUNT_STATES_AND_VIDEOS
+import com.bk.mmovies.data.source.remote.FAVORITES_SORT_NEWEST_FIRST
+import com.bk.mmovies.data.source.remote.FAVORITES_SORT_OLDEST_FIRST
 import com.bk.mmovies.data.source.remote.NetworkManager
 import com.bk.mmovies.data.source.remote.api.TmdbApi
 import com.bk.mmovies.data.source.remote.dto.EpisodeDto
@@ -191,10 +193,11 @@ class TvSeriesRepositoryImpl @Inject constructor(
         return label
     }
 
-    override suspend fun getFavoriteTvSeries(accountId: Int, sessionId: String, page: Int): TvSeriesResult {
+    override suspend fun getFavoriteTvSeries(accountId: Int, sessionId: String, page: Int, newestFirst: Boolean): TvSeriesResult {
+        val sortBy = if (newestFirst) FAVORITES_SORT_NEWEST_FIRST else FAVORITES_SORT_OLDEST_FIRST
         val apiCallResult: ApiCallResult<TvSeriesListDto> = networkManager.executeApiCall(
                 "GetFavoriteTvSeries",
-                apiCall = { -> api.getFavoriteTvSeries(accountId, sessionId, page = page) })
+                apiCall = { -> api.getFavoriteTvSeries(accountId, sessionId, page = page, sortBy = sortBy) })
 
         return when (apiCallResult) {
             is ApiCallResult.Success<TvSeriesListDto> -> {

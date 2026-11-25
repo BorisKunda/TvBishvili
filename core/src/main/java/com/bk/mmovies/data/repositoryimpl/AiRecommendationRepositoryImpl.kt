@@ -129,12 +129,20 @@ class AiRecommendationRepositoryImpl @Inject constructor(
         // attempt has its own 5s cap (see GeminiNetworkModule).
         var dailyLimitFailures = 0
         var otherFailures = 0
+        var consecutiveOverloads = 0
         for (model in models) {
-            when (val attempt = attemptModel(model, apiKey, request)) {
+            val attempt = attemptModel(model, apiKey, request)
+            consecutiveOverloads = if (attempt is Attempt.Overloaded) consecutiveOverloads + 1 else 0
+            when (attempt) {
                 is Attempt.Done       -> return attempt.result
                 is Attempt.DailyLimit -> dailyLimitFailures++
                 is Attempt.Skip       -> otherFailures++
+                is Attempt.Overloaded -> otherFailures++
                 is Attempt.Stop       -> return attempt.failure
+            }
+            if (consecutiveOverloads >= MAX_CONSECUTIVE_OVERLOADS) {
+                logDebug("Gemini", "$consecutiveOverloads overloaded models in a row -> giving up")
+                break
             }
         }
 
@@ -157,6 +165,7 @@ class AiRecommendationRepositoryImpl @Inject constructor(
         data class Done(val result: RecommendationResult) : Attempt
         data object DailyLimit : Attempt
         data object Skip : Attempt
+        data object Overloaded : Attempt
         data class Stop(val failure: RecommendationResult.Failure) : Attempt
     }
 
@@ -205,7 +214,16 @@ class AiRecommendationRepositoryImpl @Inject constructor(
                     Attempt.Skip
                 }
             }
-            is NetworkError.HttpError      -> when {
+            is NetworkError.HttpError      -> {
+                logDebug("Gemini", "$model: HTTP ${error.responseCode} body=${error.rawErrorBody.orEmpty().replace(Regex("\\s+"), " ").take(400)}")
+                classifyHttpFailure(model, error)
+            }
+            NetworkError.EmptyBody         -> Attempt.Skip
+        }
+    }
+
+    private fun classifyHttpFailure(model: String, error: NetworkError.HttpError): Attempt {
+        return when {
                 error.isDailyLimit()                 -> {
                     // Only this exact quota is recorded, until the next Pacific
                     // day; per-minute limits and overloads clear on their own.
@@ -221,12 +239,14 @@ class AiRecommendationRepositoryImpl @Inject constructor(
                                                                     )
                 // Bad request / key: the same for every model.
                 error.responseCode in STOP_HTTP_CODES -> Attempt.Stop(RecommendationResult.Failure(failureMessage))
+                error.responseCode == HTTP_SERVICE_UNAVAILABLE -> {
+                    logDebug("Gemini", "$model: HTTP 503 overloaded -> next model")
+                    Attempt.Overloaded
+                }
                 else                                 -> {
                     logDebug("Gemini", "$model: HTTP ${error.responseCode} -> next model")
                     Attempt.Skip
                 }
-            }
-            NetworkError.EmptyBody         -> Attempt.Skip
         }
     }
 
@@ -349,5 +369,7 @@ class AiRecommendationRepositoryImpl @Inject constructor(
         // bad or unauthorized key): trying other models can't help.
         val STOP_HTTP_CODES = setOf(400, 401, 403)
         const val MAX_PROMPT_FAVORITES = 20
+        const val HTTP_SERVICE_UNAVAILABLE = 503
+        const val MAX_CONSECUTIVE_OVERLOADS = 3
     }
 }
