@@ -167,6 +167,14 @@
     <string name="terms_changes_heading">Изменения условий</string>
     <string name="terms_changes_body">Эти условия могут время от времени обновляться. Продолжение использования приложения после внесения изменений означает согласие с обновлёнными условиями.</string>
     <string name="terms_privacy_policy_link">Политика конфиденциальности</string>
+    <string name="news_terms_attribution_heading">Указание NewsAPI</string>
+    <string name="news_terms_attribution_body">Этот продукт использует сервис NewsAPI, но не одобрен и не сертифицирован NewsAPI.</string>
+    <string name="news_terms_content_ownership_heading">Права на контент</string>
+    <string name="news_terms_content_ownership_body">Все новостные заголовки, статьи, изображения и связанный контент, отображаемые в этом приложении, получены через NewsAPI и принадлежат NewsAPI и первоисточникам. TvBishvili не владеет этим контентом и не заявляет на него прав.</string>
+    <string name="news_terms_data_accuracy_heading">Точность данных</string>
+    <string name="news_terms_data_accuracy_body">Контент предоставляется NewsAPI «как есть». Ни NewsAPI, ни разработчик приложения не гарантируют, что показанные новости точны, полны или актуальны. Статьи могут отсутствовать, быть устаревшими или неверными.</string>
+    <string name="news_terms_commercial_use_heading">Некоммерческое использование</string>
+    <string name="news_terms_commercial_use_body">Приложение не монетизируется и не приносит дохода. Это личный некоммерческий проект, который не продаёт, не сублицензирует и не распространяет контент или данные NewsAPI.</string>
 
     <!--PRIVACY POLICY-->
     <string name="privacy_policy_title">Политика конфиденциальности</string>

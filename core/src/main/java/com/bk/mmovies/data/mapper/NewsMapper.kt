@@ -16,11 +16,12 @@ class NewsMapper @Inject constructor(
 
     fun toModel(dto: ArticleDto): NewsItem? {
         val articleUrl = dto.url?.takeIf { it.isNotBlank() }?.repairDoubleEscapedUnicode() ?: return null
+        if (articleUrl.isConsentWallUrl()) return null
         return NewsItem(
                 title = dto.title ?: "",
                 description = dto.description ?: "",
                 articleUrl = articleUrl,
-                imageUrl = dto.imageUrl ?: "",
+                imageUrl = dto.imageUrl?.upgradedToHttps() ?: "",
                 sourceName = dto.source?.name ?: "",
                 author = dto.author ?: "",
                 publishedAt = dto.publishedAt?.let { getFormattedDate(it) } ?: "",
@@ -42,5 +43,14 @@ class NewsMapper @Inject constructor(
     private fun String.repairDoubleEscapedUnicode(): String =
             escapedUnicodeRegex.replace(this) { match -> match.groupValues[1].toInt(16).toChar().toString() }
 }
+
+private const val HTTP_SCHEME = "http://"
+
+internal fun String.upgradedToHttps(): String =
+        if (startsWith(HTTP_SCHEME, ignoreCase = true)) "https://" + substring(HTTP_SCHEME.length) else this
+
+private val consentHostRegex = Regex("""^https?://consent\.""", RegexOption.IGNORE_CASE)
+
+internal fun String.isConsentWallUrl(): Boolean = consentHostRegex.containsMatchIn(this)
 
 private val escapedUnicodeRegex = Regex("""\\+u([0-9a-fA-F]{4})""")

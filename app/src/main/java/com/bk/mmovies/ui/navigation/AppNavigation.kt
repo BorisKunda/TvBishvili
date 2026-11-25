@@ -21,6 +21,7 @@ import com.bk.mmovies.ui.screen.splash.SplashScreen
 import com.bk.mmovies.ui.screen.details.tvseriesdetails.TvSeriesDetailsScreen
 import com.bk.mmovies.ui.screen.privacypolicy.PrivacyPolicyScreen
 import com.bk.mmovies.ui.screen.search.SearchScreen
+import com.bk.mmovies.ui.screen.terms.NewsTermsScreen
 import com.bk.mmovies.ui.screen.terms.TermsScreen
 
 @Composable
@@ -53,6 +54,9 @@ fun AppNavigation(
     }
     val navigateToTerms: () -> Unit = {
         navController.navigate(AppDestination.TermsDestination)
+    }
+    val navigateToNewsTerms: () -> Unit = {
+        navController.navigate(AppDestination.NewsTermsDestination)
     }
     val navigateToPrivacyPolicy: () -> Unit = {
         navController.navigate(AppDestination.PrivacyPolicyDestination)
@@ -111,7 +115,8 @@ fun AppNavigation(
                         }
                     }, onNavigateToSearch = {
                         navigateToSearch()
-                    }, onNavigateToTerms = navigateToTerms
+                    }, onNavigateToTerms = navigateToTerms,
+                                  onNavigateToNewsTerms = navigateToNewsTerms
                                  )
                 })
                 composable<AppDestination.MovieDetailsDestination>(content = { backStackEntry ->
@@ -152,6 +157,12 @@ fun AppNavigation(
                             onBack = { navController.popBackStack() },
                             onNavigateToPrivacyPolicy = navigateToPrivacyPolicy
                                )
+                })
+                composable<AppDestination.NewsTermsDestination>(content = {
+                    NewsTermsScreen(
+                            onBack = { navController.popBackStack() },
+                            onNavigateToPrivacyPolicy = navigateToPrivacyPolicy
+                                   )
                 })
                 composable<AppDestination.PrivacyPolicyDestination>(content = {
                     PrivacyPolicyScreen(onBack = { navController.popBackStack() })

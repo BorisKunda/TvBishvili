@@ -53,7 +53,6 @@ import com.bk.mmovies.ui.component.LoadingMoreFooter
 import com.bk.mmovies.ui.component.PaginationEffect
 import com.bk.mmovies.ui.component.SmallOutlinedButton
 import com.bk.mmovies.ui.theme.CardSurface
-
 private val cardCornerShape = RoundedCornerShape(12.dp)
 private val cardSpacing = 12.dp
 private val cardPadding = 12.dp
@@ -175,8 +174,24 @@ fun NewsCard(
                                 .clip(cardCornerShape)
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                           )
-                Spacer(modifier = Modifier.height(8.dp))
+            } else {
+                Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                                .fillMaxWidth()
+                                .height(imageHeight)
+                                .clip(cardCornerShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                   ) {
+                    Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Article,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                }
             }
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                     text = newsItem.title.ifBlank { stringResource(R.string.news_untitled_article) },

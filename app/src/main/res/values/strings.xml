@@ -167,6 +167,14 @@
     <string name="terms_changes_heading">Changes to These Terms</string>
     <string name="terms_changes_body">These terms may be updated from time to time. Continued use of the app after changes are made constitutes acceptance of the updated terms.</string>
     <string name="terms_privacy_policy_link">Privacy Policy</string>
+    <string name="news_terms_attribution_heading">NewsAPI Attribution</string>
+    <string name="news_terms_attribution_body">This product uses the NewsAPI service but is not endorsed or certified by NewsAPI.</string>
+    <string name="news_terms_content_ownership_heading">Content Ownership</string>
+    <string name="news_terms_content_ownership_body">All news headlines, articles, images, and related content displayed in this app are sourced through NewsAPI and belong to NewsAPI and the original publishers. TvBishvili does not own, and makes no claim to, this content.</string>
+    <string name="news_terms_data_accuracy_heading">Data Accuracy</string>
+    <string name="news_terms_data_accuracy_body">Content is provided by NewsAPI \"as is.\" Neither NewsAPI nor the developer of this app guarantees that the news shown is accurate, complete, or up to date. Articles may be missing, outdated, or incorrect.</string>
+    <string name="news_terms_commercial_use_heading">Non-Commercial Use</string>
+    <string name="news_terms_commercial_use_body">This app is not monetized and generates no revenue. It is a personal, non-commercial project and does not sell, sublicense, or redistribute NewsAPI content or data.</string>
 
     <!--PRIVACY POLICY-->
     <string name="privacy_policy_title">Privacy Policy</string>

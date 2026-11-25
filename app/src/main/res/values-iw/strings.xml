@@ -167,6 +167,14 @@
     <string name="terms_changes_heading">שינויים בתנאים</string>
     <string name="terms_changes_body">תנאים אלה עשויים להתעדכן מעת לעת. המשך השימוש באפליקציה לאחר ביצוע שינויים מהווה הסכמה לתנאים המעודכנים.</string>
     <string name="terms_privacy_policy_link">מדיניות פרטיות</string>
+    <string name="news_terms_attribution_heading">קרדיט ל-NewsAPI</string>
+    <string name="news_terms_attribution_body">מוצר זה משתמש בשירות NewsAPI אך אינו מאושר או מוסמך על ידי NewsAPI.</string>
+    <string name="news_terms_content_ownership_heading">בעלות על התוכן</string>
+    <string name="news_terms_content_ownership_body">כל כותרות החדשות, הכתבות, התמונות והתוכן הקשור המוצגים באפליקציה זו מגיעים דרך NewsAPI ושייכים ל-NewsAPI ולמפרסמים המקוריים. ל-TvBishvili אין בעלות על תוכן זה והיא אינה טוענת לזכויות עליו.</string>
+    <string name="news_terms_data_accuracy_heading">דיוק הנתונים</string>
+    <string name="news_terms_data_accuracy_body">התוכן מסופק על ידי NewsAPI \"כפי שהוא\". לא NewsAPI ולא מפתח האפליקציה מבטיחים שהחדשות המוצגות מדויקות, שלמות או מעודכנות. כתבות עשויות להיות חסרות, מיושנות או שגויות.</string>
+    <string name="news_terms_commercial_use_heading">שימוש לא מסחרי</string>
+    <string name="news_terms_commercial_use_body">האפליקציה אינה מניבה הכנסות. זהו פרויקט אישי ולא מסחרי, ואינו מוכר, מעניק רישיון משנה או מפיץ תוכן או נתונים של NewsAPI.</string>
 
     <!--PRIVACY POLICY-->
     <string name="privacy_policy_title">מדיניות פרטיות</string>
