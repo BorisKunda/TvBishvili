@@ -80,7 +80,8 @@ fun CatalogScreen(
         onNavigateToDetailsScreen: (id: Int, category: Category) -> Unit,
         onNavigateToAuthScreen: () -> Unit,
         onNavigateToSearch: () -> Unit,
-        onNavigateToTerms: () -> Unit = {}) {
+        onNavigateToTerms: () -> Unit = {},
+        onNavigateToNewsTerms: () -> Unit = {}) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val catalogViewModel = hiltViewModel<CatalogViewModel>()
@@ -161,7 +162,10 @@ fun CatalogScreen(
                                 }
                                            )
                         if (selectedTab == CatalogBottomTab.News) {
-                            PoweredByNewsApiFooter(modifier = Modifier.padding(top = tmdbFooterTopPadding))
+                            PoweredByNewsApiFooter(
+                                    modifier = Modifier.padding(top = tmdbFooterTopPadding),
+                                    onClick = onNavigateToNewsTerms
+                                                  )
                         } else {
                             PoweredByTmdbFooter(
                                     modifier = Modifier.padding(top = tmdbFooterTopPadding),

@@ -54,9 +54,17 @@ fun PoweredByTmdbFooter(modifier: Modifier = Modifier, onClick: (() -> Unit)? = 
 // Plain-text attribution (NewsAPI has no logo asset here), shown instead of
 // the TMDB footer on the News tab.
 @Composable
-fun PoweredByNewsApiFooter(modifier: Modifier = Modifier) {
+fun PoweredByNewsApiFooter(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
     Row(
-            modifier = modifier.fillMaxWidth(),
+            modifier = modifier
+                    .fillMaxWidth()
+                    .let { rowModifier ->
+                        if (onClick != null) {
+                            rowModifier.clickable(role = Role.Button, onClick = onClick)
+                        } else {
+                            rowModifier
+                        }
+                    },
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
        ) {
