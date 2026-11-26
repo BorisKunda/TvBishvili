@@ -36,10 +36,14 @@ fun AppNavigation(
                         movieId,
                         category.categoryId
                                                       )
-                              )
+                              ) {
+            launchSingleTop = true
+        }
     }
     val navigateToTvSeriesDetails: (Int) -> Unit = { seriesId ->
-        navController.navigate(AppDestination.TvSeriesDetailsDestination(seriesId))
+        navController.navigate(AppDestination.TvSeriesDetailsDestination(seriesId)) {
+            launchSingleTop = true
+        }
     }
     val navigateToSeasonDetails: (Int, Int) -> Unit = { seriesId, seasonNumber ->
         navController.navigate(
@@ -47,7 +51,9 @@ fun AppNavigation(
                         seriesId,
                         seasonNumber
                                                         )
-                              )
+                              ) {
+            launchSingleTop = true
+        }
     }
     val navigateToSearch: () -> Unit = {
         navController.navigate(AppDestination.SearchDestination)
