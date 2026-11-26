@@ -46,6 +46,10 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -67,14 +71,16 @@ dependencies {
     youtubePlayer()
 
     testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.okhttp.tls)
+    testImplementation(libs.okhttp.logging)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.leakcanary.android.instrumentation)
-    androidTestImplementation(libs.okhttp.mockwebserver)
-    androidTestImplementation(libs.okhttp.tls)
-    androidTestImplementation(libs.okhttp.logging)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.leakcanary.android)
@@ -114,6 +120,9 @@ fun DependencyHandler.hilt() {
 
     androidTestImplementation(libs.hilt.test)
     kspAndroidTest(libs.hilt.compiler)
+
+    testImplementation(libs.hilt.test)
+    kspTest(libs.hilt.compiler)
 }
 
 fun DependencyHandler.lottie() {

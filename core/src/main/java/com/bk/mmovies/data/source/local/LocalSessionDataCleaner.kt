@@ -3,6 +3,7 @@ package com.bk.mmovies.data.source.local
 import com.bk.mmovies.data.source.local.dao.FavoriteDao
 import com.bk.mmovies.data.source.local.dao.RecentSearchDao
 import com.bk.mmovies.data.source.local.dao.TvFavoriteDao
+import com.bk.mmovies.data.source.local.preferences.RecommendationsDiskCacheSharedPrefs
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,12 +19,14 @@ import javax.inject.Singleton
 class LocalSessionDataCleaner @Inject constructor(
         private val favoriteDao: FavoriteDao,
         private val tvFavoriteDao: TvFavoriteDao,
-        private val recentSearchDao: RecentSearchDao
+        private val recentSearchDao: RecentSearchDao,
+        private val recommendationsDiskCache: RecommendationsDiskCacheSharedPrefs
                                                  ) {
 
     suspend fun clearAccountScopedData() {
         favoriteDao.clearAll()
         tvFavoriteDao.clearAll()
         recentSearchDao.clearAll()
+        recommendationsDiskCache.clearAll()
     }
 }
