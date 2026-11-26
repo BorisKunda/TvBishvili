@@ -29,6 +29,7 @@ import com.bk.mmovies.ui.theme.MMoviesTheme
 
 private val backgroundColor = CardSurface
 private val ringColor = Color(0xFF3D3D3D)
+private val notRatedRingColor = Color(0xFF8A8A8A)
 private val progressBelow40Color = Color(0xFFDB2360)
 private val progress40To70Color = Color(0xFFD2D531)
 private val progressAbove70Color = Color(0xFF21D07A)
@@ -43,6 +44,7 @@ private const val RING_STROKE_RATIO = 0.10f
 private const val MIN_RING_STROKE_DP = 4f
 private const val NUMERAL_SIZE_RATIO = 0.30f
 private const val MIN_NUMERAL_SIZE_DP = 10f
+private const val NOT_RATED_LABEL = "NR"
 
 @Composable
 fun UserScoreView(
@@ -68,7 +70,7 @@ fun UserScoreView(
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawCircle(color = backgroundColor)
             drawArc(
-                color = ringColor,
+                color = if (clampedScore == 0) notRatedRingColor else ringColor,
                 startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,
@@ -85,7 +87,7 @@ fun UserScoreView(
             }
         }
         Text(
-            text = "$clampedScore%",
+            text = if (clampedScore == 0) NOT_RATED_LABEL else "$clampedScore%",
             color = Color.White,
             fontSize = numeralFontSize,
             fontWeight = FontWeight.Bold,
@@ -145,6 +147,7 @@ private fun UserScoreViewSizesPreview() {
                 UserScoreView(score = 28, size = 28.dp)
                 UserScoreView(score = 55, size = 40.dp)
                 UserScoreView(score = 85, size = 52.dp)
+                UserScoreView(score = 0, size = 40.dp)
             }
         }
     }
