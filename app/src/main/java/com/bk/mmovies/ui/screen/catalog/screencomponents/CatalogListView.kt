@@ -98,7 +98,7 @@ private val posterHeight = 130.dp
 private val sparklePlaceholderSize = 56.dp
 val posterCornerShape = 8.dp
 private val ratingBadgeSize = 28.dp
-private val favoriteStarPadding = 0.dp
+private val favoriteStarTitleEndPadding = 32.dp
 
 // Half the default size: the catalog list's posters are much smaller than
 // the details screen's, so the star needs to shrink to match.
@@ -310,16 +310,6 @@ fun CatalogItemRow(
                                     )
                         },
                           )
-                if (showFavoriteStar) {
-                    FavoriteStarButton(
-                            isFavorite = catalogItem.isFavorite,
-                            onClick = { onFavoriteClicked(catalogItem) },
-                            modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(favoriteStarPadding),
-                            starIconSize = catalogFavoriteStarIconSize
-                                      )
-                }
             }
             Spacer(modifier = Modifier.width(spacerPadding))
             Row(
@@ -360,42 +350,54 @@ fun CatalogItemRow(
                     }
                     Spacer(modifier = Modifier.width(badgeSpacerPadding))
                 }
-                Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(textPadding)
-                      ) {
-                    Text(
+                Box(modifier = Modifier.weight(1f)) {
+                    Column(
                             modifier = Modifier.fillMaxWidth(),
-                            text = catalogItem.title,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = titleFontSize,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = TITLE_MAX_LINES,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    when (catalogItem.mediaType) {
-                        CatalogMediaType.MOVIE     -> {
-                            // The mapper yields "" for a missing date; rendering it
-                            // anyway left an unexplained gap under the title.
-                            if (catalogItem.releaseDate.isNotBlank()) {
-                                Text(
-                                        text = catalogItem.releaseDate,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(
-                                                alpha = DATE_ALPHA
-                                                                                        ),
-                                        fontSize = metadataFontSize
-                                    )
+                            verticalArrangement = Arrangement.spacedBy(textPadding)
+                          ) {
+                        Text(
+                                modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(end = if (showFavoriteStar) favoriteStarTitleEndPadding else 0.dp),
+                                text = catalogItem.title,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = titleFontSize,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = TITLE_MAX_LINES,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        when (catalogItem.mediaType) {
+                            CatalogMediaType.MOVIE     -> {
+                                // The mapper yields "" for a missing date; rendering it
+                                // anyway left an unexplained gap under the title.
+                                if (catalogItem.releaseDate.isNotBlank()) {
+                                    Text(
+                                            text = catalogItem.releaseDate,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(
+                                                    alpha = DATE_ALPHA
+                                                                                            ),
+                                            fontSize = metadataFontSize
+                                        )
+                                }
+                            }
+                            CatalogMediaType.TV_SERIES -> {
+                                tvAirDateLabel?.let { label ->
+                                    SeriesAirDateLabelText(
+                                            label = label,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = DATE_ALPHA),
+                                            style = LocalTextStyle.current.copy(fontSize = metadataFontSize)
+                                                           )
+                                }
                             }
                         }
-                        CatalogMediaType.TV_SERIES -> {
-                            tvAirDateLabel?.let { label ->
-                                SeriesAirDateLabelText(
-                                        label = label,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = DATE_ALPHA),
-                                        style = LocalTextStyle.current.copy(fontSize = metadataFontSize)
-                                                       )
-                            }
-                        }
+                    }
+                    if (showFavoriteStar) {
+                        FavoriteStarButton(
+                                isFavorite = catalogItem.isFavorite,
+                                onClick = { onFavoriteClicked(catalogItem) },
+                                modifier = Modifier.align(Alignment.TopEnd),
+                                starIconSize = catalogFavoriteStarIconSize
+                                          )
                     }
                 }
             }
