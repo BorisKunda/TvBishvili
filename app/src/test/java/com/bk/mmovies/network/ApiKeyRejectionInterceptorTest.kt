@@ -26,7 +26,9 @@ import okhttp3.tls.HeldCertificate
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import com.bk.mmovies.keystore.FakeAndroidKeyStoreRule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.InetAddress
@@ -41,6 +43,9 @@ private const val SESSION_DENIED_BODY =
 
 @RunWith(AndroidJUnit4::class)
 class ApiKeyRejectionInterceptorTest {
+
+    @get:Rule
+    val fakeAndroidKeyStoreRule = FakeAndroidKeyStoreRule()
 
     private lateinit var mockWebServer: MockWebServer
     private lateinit var apiKeyStorage: AuthCredentialsSharedPrefs
