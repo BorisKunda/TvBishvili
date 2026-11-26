@@ -469,12 +469,22 @@ private fun SeasonsSection(
 
 @Composable
 private fun SeasonRow(season: SeasonModel, onClick: () -> Unit) {
+    val metaText = listOf(season.episodeCountLabel, season.airDate)
+            .filter { it.isNotBlank() }
+            .joinToString(" • ")
+    val hasNoInformation = metaText.isBlank()
     Row(
             modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(
-                            onClickLabel = stringResource(R.string.movie_open_details_action)
-                              ) { onClick() },
+                    .then(
+                            if (hasNoInformation) {
+                                Modifier
+                            } else {
+                                Modifier.clickable(
+                                        onClickLabel = stringResource(R.string.movie_open_details_action)
+                                                  ) { onClick() }
+                            }
+                         ),
             verticalAlignment = Alignment.CenterVertically
        ) {
         AsyncImage(
@@ -500,19 +510,12 @@ private fun SeasonRow(season: SeasonModel, onClick: () -> Unit) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-            // The mapper yields "" for a missing count/date; rendering an
-            // empty line anyway left an unexplained gap under the name.
-            val metaText = listOf(season.episodeCountLabel, season.airDate)
-                    .filter { it.isNotBlank() }
-                    .joinToString(" • ")
-            if (metaText.isNotBlank()) {
-                Text(
-                        text = metaText,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = SECONDARY_TEXT_ALPHA),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = seasonRowMetaTopSpacing)
-                    )
-            }
+            Text(
+                    text = if (hasNoInformation) stringResource(R.string.details_season_no_information) else metaText,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = SECONDARY_TEXT_ALPHA),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = seasonRowMetaTopSpacing)
+                )
         }
     }
 }
